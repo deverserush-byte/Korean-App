@@ -3,331 +3,573 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Korean Dictation App</title>
+  <title>Korean Audio Practice</title>
   <style>
-    :root {
-      --bg-color: #f4f6f9;
-      --card-bg: #ffffff;
-      --primary: #4a90e2;
-      --success: #2ecc71;
-      --danger: #e74c3c;
-      --text: #2c3e50;
-      --border: #e1e8ed;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text);
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 500px;
-      background: var(--card-bg);
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    }
-
-    h1, h2 {
-      text-align: center;
-      margin-top: 0;
-    }
-
-    .tab-buttons {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid var(--border);
-      background: #f8f9fa;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .tab-btn.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-
-    .section {
-      display: none;
-    }
-
-    .section.active {
-      display: block;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-success { background: var(--success); color: white; }
-    .btn-secondary { background: #95a5a6; color: white; }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 16px;
-      box-sizing: border-box;
-      margin-bottom: 10px;
-    }
-
-    .feedback {
-      margin-top: 15px;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: bold;
-      display: none;
-    }
-
-    .feedback.correct {
-      background: #e8f8f5;
-      color: var(--success);
-      display: block;
-    }
-
-    .feedback.incorrect {
-      background: #fadbd8;
-      color: var(--danger);
-      display: block;
-    }
-
-    .word-list {
-      list-style: none;
-      padding: 0;
-      margin-top: 15px;
-    }
-
-    .word-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .word-item button {
-      background: #e74c3c;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-
-    .word-item button.restore-btn {
-      background: var(--primary);
-      margin-left: 5px;
-    }
-
-    .audio-controls {
-      display: flex;
-      justify-content: center;
-      margin: 20px 0;
-    }
-
-    .play-sound-btn {
-      background: #8e44ad;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 64px;
-      height: 64px;
-      font-size: 24px;
-      cursor: pointer;
-    }
-
-    #memorize-btn {
-      display: none;
-      background: #f39c12;
-      color: white;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f8f9fa; color: #333; display: flex; justify-content: center; padding: 16px; }
+    .app-container { width: 100%; max-width: 480px; background: #ffffff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; gap: 16px; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
+    .header-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; color: #666; text-transform: uppercase; }
+    .pause-btn { background: #f0f0f0; border: none; border-radius: 50%; width: 32px; height: 32px; font-weight: bold; cursor: pointer; }
+    .cards-row { display: flex; gap: 12px; }
+    .card { flex: 1; border-radius: 16px; padding: 16px; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; position: relative; }
+    .flashcard { background: #f4f7ff; border: 1px solid #d0e0ff; }
+    .flashcard-dot { width: 8px; height: 8px; background-color: #4c84ff; border-radius: 50%; position: absolute; top: 12px; left: 12px; }
+    .flashcard-main { font-size: 22px; font-weight: bold; color: #222; margin-top: 12px; }
+    .flashcard-sub { font-size: 11px; color: #777; }
+    .flashcard-action { font-size: 11px; color: #4c84ff; font-weight: 600; margin-top: 4px; }
+    .status-card { background: #fafafa; border: 1px solid #eaeaea; align-items: flex-start; text-align: left; }
+    .status-badge { font-size: 10px; font-weight: bold; color: #2e7d32; display: flex; align-items: center; gap: 4px; }
+    .status-badge::before { content: ''; width: 6px; height: 6px; background-color: #2e7d32; border-radius: 50%; }
+    .waveform { width: 100%; height: 30px; display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: auto; }
+    .bar { width: 3px; background-color: #ccc; border-radius: 3px; animation: pulse 1.2s infinite ease-in-out; }
+    .bar:nth-child(1) { height: 10px; animation-delay: 0.1s; }
+    .bar:nth-child(2) { height: 18px; animation-delay: 0.2s; }
+    .bar:nth-child(3) { height: 25px; animation-delay: 0.3s; }
+    .bar:nth-child(4) { height: 14px; animation-delay: 0.4s; }
+    .bar:nth-child(5) { height: 20px; animation-delay: 0.2s; }
+    @keyframes pulse { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.4); } }
+    .card-meta { display: flex; justify-content: space-between; font-size: 11px; color: #888; padding: 0 4px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; padding: 8px 0; }
+    .stat-label { font-size: 11px; color: #777; margin-bottom: 4px; }
+    .stat-value { font-size: 14px; font-weight: bold; color: #222; }
+    .control-group { display: flex; flex-direction: column; gap: 8px; }
+    .control-label { font-size: 12px; color: #555; font-weight: 600; }
+    .segmented-control { display: flex; background: #f0f0f0; border-radius: 20px; padding: 3px; gap: 2px; }
+    .segmented-btn { flex: 1; border: none; background: transparent; padding: 8px 0; font-size: 11px; font-weight: 600; color: #555; border-radius: 17px; cursor: pointer; transition: all 0.2s ease; }
+    .segmented-btn.active { background: #4c84ff; color: #fff; }
+    .delay-box { background: #f8f9fa; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .slider-container { display: flex; align-items: center; gap: 12px; }
+    .slider-container input[type=range] { flex: 1; accent-color: #4c84ff; }
+    .delay-val { font-size: 12px; font-weight: bold; color: #333; white-space: nowrap; }
+    .btn-row { display: flex; gap: 10px; }
+    .btn { flex: 1; padding: 10px; border-radius: 20px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-light { background: #f0f0f0; color: #333; }
+    .btn-primary { background: #4c84ff; color: #fff; }
+    .btn-warning { background: #ff9500; color: #fff; }
+    .add-word-card { border: 1px dashed #d0d0d0; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
+    .add-word-title { font-size: 10px; font-weight: 700; color: #777; letter-spacing: 0.5px; }
+    .input-field-container { display: flex; gap: 8px; }
+    .input-field { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid #e0e0e0; background: #ffffff; font-size: 12px; outline: none; }
+    .btn-auto-translate { background: #eef3ff; color: #4c84ff; border: 1px solid #4c84ff; border-radius: 8px; padding: 0 12px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .btn-add { background: #4c84ff; color: #fff; padding: 10px; border-radius: 20px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; }
+    .custom-list-container { margin-top: 6px; border-top: 1px solid #eaeaea; padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .folder-toggle-btn { width: 100%; background: #f0f4ff; color: #3b82f6; border: 1px solid #dbeafe; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .memorized-toggle-btn { background: #fff7ed; color: #d97706; border-color: #ffedd5; }
+    .custom-word-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+    .custom-word-item { display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; }
+    .custom-word-kor { font-weight: bold; color: #222; }
+    .custom-word-eng { color: #666; font-size: 11px; margin-left: 6px; }
+    .delete-btn { background: #ffeded; color: #e53e3e; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
+    .restore-btn { background: #e6fffa; color: #0d9488; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
+    .empty-list-text { font-size: 11px; color: #aaa; text-align: center; padding: 12px; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="tab-buttons">
-    <button class="tab-btn active" onclick="switchTab('practice')">Practice</button>
-    <button class="tab-btn" onclick="switchTab('manage')">Words</button>
-    <button class="tab-btn" onclick="switchTab('memorized')">🧠 Memorized</button>
-  </div>
-
-  <!-- PRACTICE TAB -->
-  <div id="tab-practice" class="section active">
-    <h1>Dictation Practice</h1>
-    <div class="audio-controls">
-      <button class="play-sound-btn" onclick="playAudio()">🔊</button>
+  <div class="app-container">
+    <div class="header">
+      <span class="header-title">Korean Audio Practice</span>
+      <button class="pause-btn" id="togglePlayBtn">❚❚</button>
     </div>
-    <input type="text" id="user-input" placeholder="Type what you hear..." autocomplete="off">
-    <button class="btn btn-primary" onclick="checkAnswer()">Check Answer</button>
 
-    <div id="feedback" class="feedback"></div>
-    <button id="memorize-btn" class="btn" onclick="markAsMemorized()">🧠 Mark as Memorized</button>
-    <button id="next-btn" class="btn btn-secondary" style="display:none; margin-top: 8px;" onclick="nextWord()">Next Word ➔</button>
+    <!-- Cards Row -->
+    <div class="cards-row">
+      <div class="card flashcard">
+        <div class="flashcard-dot"></div>
+        <div class="flashcard-main" id="displayWord">????</div>
+        <div class="flashcard-sub" id="displayHint">[ Listen to audio ]</div>
+        <div class="flashcard-action">Write in your book...</div>
+      </div>
+      <div class="card status-card">
+        <div class="status-badge">BOOK DICTATION ACTIVE</div>
+        <div class="waveform">
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+        <div style="font-size: 10px; color: #888; margin-top: 6px;">Auto-advancing target stream...</div>
+      </div>
+    </div>
+
+    <div class="card-meta">
+      <span id="cardIndexLabel">Card index: 1 / 5</span>
+      <span id="intervalLabel">Interval: 5s</span>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #f0f0f0;">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div>
+        <div class="stat-label">Total Spoken</div>
+        <div class="stat-value" id="spokenCount">0 times</div>
+      </div>
+      <div>
+        <div class="stat-label">Current Deck</div>
+        <div class="stat-value" id="deckLabel">Essential</div>
+      </div>
+      <div>
+        <div class="stat-label">Practice Flow</div>
+        <div class="stat-value" id="flowLabel">0% Done</div>
+      </div>
+    </div>
+
+    <!-- Vocabulary Deck Selection -->
+    <div class="control-group">
+      <div class="control-label">Select Vocabulary Deck</div>
+      <div class="segmented-control" id="deckSelector">
+        <button class="segmented-btn active" data-deck="essential">Essential</button>
+        <button class="segmented-btn" data-deck="verbs">Verbs</button>
+        <button class="segmented-btn" data-deck="travel">Travel</button>
+        <button class="segmented-btn" data-deck="custom" id="customDeckBtn">Custom (0)</button>
+        <button class="segmented-btn" data-deck="memorized" id="memorizedDeckBtn">🧠 Memorized (0)</button>
+      </div>
+    </div>
+
+    <!-- Playback Audio Order -->
+    <div class="control-group">
+      <div class="control-label">Playback Audio Order</div>
+      <div class="segmented-control" id="orderSelector">
+        <button class="segmented-btn active" data-order="random">Random Shuffle</button>
+        <button class="segmented-btn" data-order="sequential">Sequential</button>
+      </div>
+    </div>
+
+    <!-- Dictation Delay -->
+    <div class="delay-box">
+      <div class="control-label" style="font-size: 11px;">Dictation Writing Delay</div>
+      <div class="slider-container">
+        <input type="range" id="delaySlider" min="2" max="15" value="5">
+        <span class="delay-val" id="delayValText">5 seconds</span>
+      </div>
+    </div>
+
+    <!-- Navigation & Playback Controls -->
+    <div class="btn-row">
+      <button class="btn btn-light" id="prevBtn">│◄ Prev</button>
+      <button class="btn btn-light" id="nextBtn">Next ►│</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="repeatBtn">🔊 Repeat Audio</button>
+      <button class="btn btn-light" id="checkBtn">Check Answer</button>
+      <button class="btn btn-warning" id="memorizeCurrentBtn">🧠 Memorized</button>
+    </div>
+
+    <!-- Add Custom Vocabulary & Saved List -->
+    <div class="add-word-card">
+      <div class="add-word-title">ADD CUSTOM VOCABULARY WORD</div>
+      <div class="input-field-container">
+        <input type="text" class="input-field" id="customKorean" placeholder="Korean Word (e.g. 학교)">
+        <button class="btn-auto-translate" id="autoTranslateBtn">✨ Auto Translate</button>
+      </div>
+      <input type="text" class="input-field" id="customEnglish" placeholder="English Translation (e.g. School)">
+      <button class="btn-add" id="addWordBtn">+ Add Word to Custom Deck List</button>
+
+      <!-- Custom Folder Dropdown -->
+      <div class="custom-list-container">
+        <button class="folder-toggle-btn" id="folderToggleBtn">
+          <span id="folderTitleText">📁 Saved Custom Words (0)</span>
+          <span id="folderArrow">▼</span>
+        </button>
+        <div class="custom-word-list hidden" id="customWordListContainer">
+          <div class="empty-list-text">No custom words added yet.</div>
+        </div>
+
+        <!-- Memorized Folder Dropdown -->
+        <button class="folder-toggle-btn memorized-toggle-btn" id="memorizedToggleBtn">
+          <span id="memorizedTitleText">🧠 Memorized Words (0)</span>
+          <span id="memorizedArrow">▼</span>
+        </button>
+        <div class="custom-word-list hidden" id="memorizedWordListContainer">
+          <div class="empty-list-text">No memorized words saved yet.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- MANAGE WORDS TAB -->
-  <div id="tab-manage" class="section">
-    <h2>Active Word Bank</h2>
-    <input type="text" id="new-word" placeholder="Add Korean word...">
-    <button class="btn btn-success" onclick="addWord()">Add Word</button>
-    <ul id="active-list" class="word-list"></ul>
-  </div>
+  <script>
+    const decks = {
+      essential: [
+        { korean: "안녕하세요", english: "Hello" },
+        { korean: "감사합니다", english: "Thank you" },
+        { korean: "네", english: "Yes" },
+        { korean: "아니요", english: "No" },
+        { korean: "죄송합니다", english: "Sorry" }
+      ],
+      verbs: [
+        { korean: "가다", english: "To go" },
+        { korean: "오다", english: "To come" },
+        { korean: "먹다", english: "To eat" },
+        { korean: "마시다", english: "To drink" },
+        { korean: "자다", english: "To sleep" }
+      ],
+      travel: [
+        { korean: "공항", english: "Airport" },
+        { korean: "호텔", english: "Hotel" },
+        { korean: "여권", english: "Passport" },
+        { korean: "택시", english: "Taxi" },
+        { korean: "지도", english: "Map" }
+      ],
+      custom: [],
+      memorized: []
+    };
 
-  <!-- MEMORIZED TAB -->
-  <div id="tab-memorized" class="section">
-    <h2>Memorized Folder</h2>
-    <p style="font-size:0.9em; color:#666; text-align:center;">Words here won't show up in practice tests.</p>
-    <ul id="memorized-list" class="word-list"></ul>
-  </div>
-</div>
-
-<script>
-  let activeWords = JSON.parse(localStorage.getItem('korean_words')) || ['안녕하세요', '감사합니다', '한국어'];
-  let memorizedWords = JSON.parse(localStorage.getItem('korean_memorized')) || [];
-  let currentWordIndex = 0;
-
-  function saveData() {
-    localStorage.setItem('korean_words', JSON.stringify(activeWords));
-    localStorage.setItem('korean_memorized', JSON.stringify(memorizedWords));
-    renderLists();
-  }
-
-  function switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-    
-    if (tab === 'practice') {
-      document.querySelectorAll('.tab-btn')[0].classList.add('active');
-      document.getElementById('tab-practice').classList.add('active');
-      nextWord();
-    } else if (tab === 'manage') {
-      document.querySelectorAll('.tab-btn')[1].classList.add('active');
-      document.getElementById('tab-manage').classList.add('active');
-    } else {
-      document.querySelectorAll('.tab-btn')[2].classList.add('active');
-      document.getElementById('tab-memorized').classList.add('active');
-    }
-  }
-
-  function playAudio() {
-    if (activeWords.length === 0) return;
-    const word = activeWords[currentWordIndex];
-    const utterance = new SpeechSynthesisUtterance(word);
-    utterance.lang = 'ko-KR';
-    window.speechSynthesis.speak(utterance);
-  }
-
-  function checkAnswer() {
-    if (activeWords.length === 0) return;
-    const input = document.getElementById('user-input').value.trim();
-    const correct = activeWords[currentWordIndex];
-    const feedback = document.getElementById('feedback');
-    const memorizeBtn = document.getElementById('memorize-btn');
-    const nextBtn = document.getElementById('next-btn');
-
-    if (input === correct) {
-      feedback.className = "feedback correct";
-      feedback.innerText = "✨ Correct! Fantastic job!";
-      memorizeBtn.style.display = "block";
-      nextBtn.style.display = "block";
-    } else {
-      feedback.className = "feedback incorrect";
-      feedback.innerText = `❌ Not quite. Correct word: ${correct}`;
-      memorizeBtn.style.display = "none";
-      nextBtn.style.display = "block";
-    }
-  }
-
-  function markAsMemorized() {
-    if (activeWords.length === 0) return;
-    const word = activeWords[currentWordIndex];
-    memorizedWords.push(word);
-    activeWords.splice(currentWordIndex, 1);
-    saveData();
-    nextWord();
-  }
-
-  function nextWord() {
-    document.getElementById('user-input').value = '';
-    document.getElementById('feedback').style.display = 'none';
-    document.getElementById('memorize-btn').style.display = 'none';
-    document.getElementById('next-btn').style.display = 'none';
-
-    if (activeWords.length === 0) {
-      document.getElementById('feedback').className = "feedback correct";
-      document.getElementById('feedback').innerText = "🎉 You've memorized or practiced all words!";
-      document.getElementById('feedback').style.display = 'block';
-      return;
+    // Load saved custom & memorized words automatically from browser memory
+    function loadSavedWords() {
+      const storedCustom = localStorage.getItem("korean_custom_words");
+      if (storedCustom) {
+        try { decks.custom = JSON.parse(storedCustom); } catch (e) { decks.custom = []; }
+      }
+      const storedMemorized = localStorage.getItem("korean_memorized_words");
+      if (storedMemorized) {
+        try { decks.memorized = JSON.parse(storedMemorized); } catch (e) { decks.memorized = []; }
+      }
     }
 
-    currentWordIndex = Math.floor(Math.random() * activeWords.length);
-    playAudio();
-  }
-
-  function addWord() {
-    const input = document.getElementById('new-word');
-    const word = input.value.trim();
-    if (word) {
-      activeWords.push(word);
-      input.value = '';
-      saveData();
+    function saveWordsToStorage() {
+      localStorage.setItem("korean_custom_words", JSON.stringify(decks.custom));
+      localStorage.setItem("korean_memorized_words", JSON.stringify(decks.memorized));
     }
-  }
 
-  function deleteWord(index) {
-    activeWords.splice(index, 1);
-    saveData();
-  }
+    loadSavedWords();
 
-  function restoreWord(index) {
-    const word = memorizedWords.splice(index, 1)[0];
-    activeWords.push(word);
-    saveData();
-  }
+    // State
+    let currentDeckKey = "essential";
+    let activeList = [...decks.essential];
+    let currentIndex = 0;
+    let spokenCount = 0;
+    let isPlaying = true;
+    let orderMode = "random";
+    let delaySeconds = 5;
+    let timer = null;
+    let answerRevealed = false;
+    let isFolderOpen = false;
+    let isMemorizedFolderOpen = false;
 
-  function renderLists() {
-    const activeList = document.getElementById('active-list');
-    activeList.innerHTML = '';
-    activeWords.forEach((word, index) => {
-      activeList.innerHTML += `<li class="word-item"><span>${word}</span><button onclick="deleteWord(${index})">Delete</button></li>`;
+    // Elements
+    const displayWord = document.getElementById("displayWord");
+    const displayHint = document.getElementById("displayHint");
+    const cardIndexLabel = document.getElementById("cardIndexLabel");
+    const intervalLabel = document.getElementById("intervalLabel");
+    const spokenCountEl = document.getElementById("spokenCount");
+    const deckLabel = document.getElementById("deckLabel");
+    const flowLabel = document.getElementById("flowLabel");
+    const delaySlider = document.getElementById("delaySlider");
+    const delayValText = document.getElementById("delayValText");
+    const customDeckBtn = document.getElementById("customDeckBtn");
+    const memorizedDeckBtn = document.getElementById("memorizedDeckBtn");
+    const customWordListContainer = document.getElementById("customWordListContainer");
+    const memorizedWordListContainer = document.getElementById("memorizedWordListContainer");
+    const folderToggleBtn = document.getElementById("folderToggleBtn");
+    const folderTitleText = document.getElementById("folderTitleText");
+    const folderArrow = document.getElementById("folderArrow");
+    const memorizedToggleBtn = document.getElementById("memorizedToggleBtn");
+    const memorizedTitleText = document.getElementById("memorizedTitleText");
+    const memorizedArrow = document.getElementById("memorizedArrow");
+
+    function speakKorean(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 0.8;
+        window.speechSynthesis.speak(utterance);
+        spokenCount++;
+        spokenCountEl.innerText = `${spokenCount} times`;
+      }
+    }
+
+    function updateCardDisplay() {
+      answerRevealed = false;
+      displayWord.innerText = "????";
+      displayHint.innerText = "[ Listen to audio ]";
+
+      if (activeList.length === 0) {
+        cardIndexLabel.innerText = "Card index: 0 / 0";
+        flowLabel.innerText = "100% Done";
+        displayWord.innerText = "Empty";
+        displayHint.innerText = "[ No words in this deck ]";
+        return;
+      }
+
+      cardIndexLabel.innerText = `Card index: ${currentIndex + 1} / ${activeList.length}`;
+      const pct = Math.round(((currentIndex + 1) / activeList.length) * 100);
+      flowLabel.innerText = `${pct}% Done`;
+
+      if (isPlaying && activeList.length > 0) {
+        speakKorean(activeList[currentIndex].korean);
+      }
+    }
+
+    function renderCustomList() {
+      const customCount = decks.custom.length;
+      const memorizedCount = decks.memorized.length;
+
+      customDeckBtn.innerText = `Custom (${customCount})`;
+      memorizedDeckBtn.innerText = `🧠 Memorized (${memorizedCount})`;
+
+      folderTitleText.innerText = `📁 Saved Custom Words (${customCount})`;
+      memorizedTitleText.innerText = `🧠 Memorized Words (${memorizedCount})`;
+
+      // Render Custom List
+      if (customCount === 0) {
+        customWordListContainer.innerHTML = `<div class="empty-list-text">No custom words added yet.</div>`;
+      } else {
+        customWordListContainer.innerHTML = decks.custom.map((item, index) => `
+          <div class="custom-word-item">
+            <div>
+              <span class="custom-word-kor">${item.korean}</span>
+              <span class="custom-word-eng">- ${item.english}</span>
+            </div>
+            <button class="delete-btn" onclick="deleteCustomWord(${index})">Delete</button>
+          </div>
+        `).join("");
+      }
+
+      // Render Memorized List
+      if (memorizedCount === 0) {
+        memorizedWordListContainer.innerHTML = `<div class="empty-list-text">No memorized words saved yet.</div>`;
+      } else {
+        memorizedWordListContainer.innerHTML = decks.memorized.map((item, index) => `
+          <div class="custom-word-item">
+            <div>
+              <span class="custom-word-kor">${item.korean}</span>
+              <span class="custom-word-eng">- ${item.english}</span>
+            </div>
+            <button class="restore-btn" onclick="restoreMemorizedWord(${index})">Unmemorize</button>
+          </div>
+        `).join("");
+      }
+    }
+
+    window.deleteCustomWord = function(index) {
+      decks.custom.splice(index, 1);
+      saveWordsToStorage();
+      renderCustomList();
+      if (currentDeckKey === 'custom') {
+        setDeck('custom');
+      }
+    };
+
+    window.restoreMemorizedWord = function(index) {
+      const restored = decks.memorized.splice(index, 1)[0];
+      if (restored) {
+        decks.custom.push(restored);
+      }
+      saveWordsToStorage();
+      renderCustomList();
+      if (currentDeckKey === 'memorized' || currentDeckKey === 'custom') {
+        setDeck(currentDeckKey);
+      }
+    };
+
+    function markCurrentAsMemorized() {
+      if (activeList.length === 0) return;
+      const wordObj = activeList[currentIndex];
+      
+      // Add to memorized deck if not already there
+      if (!decks.memorized.some(w => w.korean === wordObj.korean)) {
+        decks.memorized.push(wordObj);
+      }
+
+      // If removed from custom deck
+      if (currentDeckKey === 'custom') {
+        const customIndex = decks.custom.findIndex(w => w.korean === wordObj.korean);
+        if (customIndex !== -1) decks.custom.splice(customIndex, 1);
+      }
+
+      saveWordsToStorage();
+      renderCustomList();
+
+      // Move to next card and update
+      activeList.splice(currentIndex, 1);
+      if (currentIndex >= activeList.length) {
+        currentIndex = 0;
+      }
+      updateCardDisplay();
+      resetTimer();
+    }
+
+    function shuffleArray(arr) {
+      return [...arr].sort(() => Math.random() - 0.5);
+    }
+
+    function resetTimer() {
+      if (timer) clearInterval(timer);
+      if (isPlaying && activeList.length > 0) {
+        timer = setInterval(() => {
+          nextCard();
+        }, delaySeconds * 1000);
+      }
+    }
+
+    function setDeck(deckKey) {
+      currentDeckKey = deckKey;
+      deckLabel.innerText = deckKey.charAt(0).toUpperCase() + deckKey.slice(1);
+      
+      if (deckKey === 'custom' && decks.custom.length === 0) {
+        alert("Custom deck is empty. Add a word below!");
+      }
+
+      if (orderMode === "random") {
+        activeList = shuffleArray(decks[deckKey]);
+      } else {
+        activeList = [...decks[deckKey]];
+      }
+
+      currentIndex = 0;
+      updateCardDisplay();
+      resetTimer();
+    }
+
+    function nextCard() {
+      if (activeList.length === 0) return;
+      currentIndex = (currentIndex + 1) % activeList.length;
+      updateCardDisplay();
+    }
+
+    function prevCard() {
+      if (activeList.length === 0) return;
+      currentIndex = (currentIndex - 1 + activeList.length) % activeList.length;
+      updateCardDisplay();
+      resetTimer();
+    }
+
+    async function translateKoreanToEnglish(text) {
+      try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=ko|en`);
+        const data = await response.json();
+        if (data && data.responseData && data.responseData.translatedText) {
+          return data.responseData.translatedText;
+        }
+      } catch (err) {
+        console.error("Translation API failed", err);
+      }
+      return "";
+    }
+
+    folderToggleBtn.addEventListener("click", () => {
+      isFolderOpen = !isFolderOpen;
+      customWordListContainer.classList.toggle("hidden", !isFolderOpen);
+      folderArrow.innerText = isFolderOpen ? "▲" : "▼";
     });
 
-    const memorizedList = document.getElementById('memorized-list');
-    memorizedList.innerHTML = '';
-    memorizedWords.forEach((word, index) => {
-      memorizedList.innerHTML += `<li class="word-item"><span>${word}</span><button class="restore-btn" onclick="restoreWord(${index})">Unmemorize</button></li>`;
+    memorizedToggleBtn.addEventListener("click", () => {
+      isMemorizedFolderOpen = !isMemorizedFolderOpen;
+      memorizedWordListContainer.classList.toggle("hidden", !isMemorizedFolderOpen);
+      memorizedArrow.innerText = isMemorizedFolderOpen ? "▲" : "▼";
     });
-  }
 
-  // Initial setup
-  saveData();
-  nextWord();
-</script>
+    document.getElementById("autoTranslateBtn").addEventListener("click", async () => {
+      const kor = document.getElementById("customKorean").value.trim();
+      if (!kor) {
+        alert("Please enter a Korean word first.");
+        return;
+      }
+      
+      const translateBtn = document.getElementById("autoTranslateBtn");
+      translateBtn.innerText = "Translating...";
+      
+      const translation = await translateKoreanToEnglish(kor);
+      if (translation) {
+        document.getElementById("customEnglish").value = translation;
+      } else {
+        alert("Could not translate automatically. Please type the translation manually.");
+      }
+      translateBtn.innerText = "✨ Auto Translate";
+    });
 
+    document.getElementById("deckSelector").addEventListener("click", (e) => {
+      if (e.target.classList.contains("segmented-btn")) {
+        document.querySelectorAll("#deckSelector .segmented-btn").forEach(b => b.classList.remove("active"));
+        e.target.classList.add("active");
+        setDeck(e.target.dataset.deck);
+      }
+    });
+
+    document.getElementById("orderSelector").addEventListener("click", (e) => {
+      if (e.target.classList.contains("segmented-btn")) {
+        document.querySelectorAll("#orderSelector .segmented-btn").forEach(b => b.classList.remove("active"));
+        e.target.classList.add("active");
+        orderMode = e.target.dataset.order;
+        setDeck(currentDeckKey);
+      }
+    });
+
+    delaySlider.addEventListener("input", (e) => {
+      delaySeconds = parseInt(e.target.value);
+      delayValText.innerText = `${delaySeconds} seconds`;
+      intervalLabel.innerText = `Interval: ${delaySeconds}s`;
+      resetTimer();
+    });
+
+    document.getElementById("togglePlayBtn").addEventListener("click", (e) => {
+      isPlaying = !isPlaying;
+      e.target.innerText = isPlaying ? "❚❚" : "▶";
+      if (isPlaying) {
+        resetTimer();
+        speakKorean(activeList[currentIndex].korean);
+      } else {
+        if (timer) clearInterval(timer);
+      }
+    });
+
+    document.getElementById("repeatBtn").addEventListener("click", () => {
+      if (activeList.length > 0) {
+        speakKorean(activeList[currentIndex].korean);
+      }
+    });
+
+    document.getElementById("checkBtn").addEventListener("click", () => {
+      if (activeList.length === 0) return;
+      answerRevealed = !answerRevealed;
+      if (answerRevealed) {
+        displayWord.innerText = activeList[currentIndex].korean;
+        displayHint.innerText = `[ ${activeList[currentIndex].english} ]`;
+      } else {
+        displayWord.innerText = "????";
+        displayHint.innerText = "[ Listen to audio ]";
+      }
+    });
+
+    document.getElementById("memorizeCurrentBtn").addEventListener("click", () => {
+      markCurrentAsMemorized();
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      nextCard();
+      resetTimer();
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", () => {
+      prevCard();
+    });
+
+    document.getElementById("addWordBtn").addEventListener("click", async () => {
+      const kor = document.getElementById("customKorean").value.trim();
+      let eng = document.getElementById("customEnglish").value.trim();
+      
+      if (!kor) {
+        alert("Please enter a Korean word.");
+        return;
+      }
+
+      if (!eng) {
+        eng = await translateKoreanToEnglish(kor);
+      }
+
+      decks.custom.push({ korean: kor, english: eng || "Translation unavailable" });
+      saveWordsToStorage();
+      renderCustomList();
+
+      document.getElementById("customKorean").value = "";
+      document.getElementById("customEnglish").value = "";
+    });
+
+    // Init
+    renderCustomList();
+    updateCardDisplay();
+    resetTimer();
+  </script>
 </body>
 </html>
