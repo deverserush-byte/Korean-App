@@ -58,8 +58,10 @@
     .memorized-toggle-btn { background: #fff7ed; color: #d97706; border-color: #ffedd5; }
     .custom-word-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
     .custom-word-item { display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; }
+    .action-btn-group { display: flex; gap: 4px; }
     .custom-word-kor { font-weight: bold; color: #222; }
     .custom-word-eng { color: #666; font-size: 11px; margin-left: 6px; }
+    .edit-btn { background: #edf2f7; color: #4a5568; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
     .delete-btn { background: #ffeded; color: #e53e3e; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
     .restore-btn { background: #e6fffa; color: #0d9488; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
     .empty-list-text { font-size: 11px; color: #aaa; text-align: center; padding: 12px; }
@@ -321,7 +323,10 @@
               <span class="custom-word-kor">${item.korean}</span>
               <span class="custom-word-eng">- ${item.english}</span>
             </div>
-            <button class="delete-btn" onclick="deleteCustomWord(${index})">Delete</button>
+            <div class="action-btn-group">
+              <button class="edit-btn" onclick="editCustomWord(${index})">Edit</button>
+              <button class="delete-btn" onclick="deleteCustomWord(${index})">Delete</button>
+            </div>
           </div>
         `).join("");
       }
@@ -341,6 +346,37 @@
         `).join("");
       }
     }
+
+    window.editCustomWord = function(index) {
+      const item = decks.custom[index];
+      if (!item) return;
+
+      const newKorean = prompt("Edit Korean Word:", item.korean);
+      if (newKorean === null) return; // Cancelled
+
+      const newEnglish = prompt("Edit English Translation / Meanings:", item.english);
+      if (newEnglish === null) return; // Cancelled
+
+      const trimmedKor = newKorean.trim();
+      const trimmedEng = newEnglish.trim();
+
+      if (!trimmedKor) {
+        alert("Korean word cannot be empty.");
+        return;
+      }
+
+      decks.custom[index] = {
+        korean: trimmedKor,
+        english: trimmedEng || "Translation unavailable"
+      };
+
+      saveWordsToStorage();
+      renderCustomList();
+
+      if (currentDeckKey === 'custom') {
+        setDeck('custom');
+      }
+    };
 
     window.deleteCustomWord = function(index) {
       decks.custom.splice(index, 1);
@@ -558,9 +594,38 @@
         eng = await translateKoreanToEnglish(kor);
       }
 
+      // Check if word already exists in Custom Deck
+      const existingCustom = decks.custom.find(item => item.korean === kor);
+
+      if (existingCustom) {
+        const updateMeaning = confirm(
+          `⚠️ Duplicate Word Detected!\n\n"${kor}" is already saved with the meaning:\n👉 "${existingCustom.english}"\n\nSince Korean words can have multiple meanings, would you like to append/add this new translation ("${eng}") to the existing word?`
+        );
+
+        if (updateMeaning) {
+          existingCustom.english += `, ${eng}`;
+          saveWordsToStorage();
+          renderCustomList();
+          if (currentDeckKey === 'custom') setDeck('custom');
+          document.getElementById("customKorean").value = "";
+          document.getElementById("customEnglish").value = "";
+        }
+        return; // Prevents creating a duplicate card entry
+      }
+
+      // Check if word is already in Memorized Deck
+      const existingMemorized = decks.memorized.find(item => item.korean === kor);
+      if (existingMemorized) {
+        alert(`⚠️ Note: "${kor}" is currently saved in your Memorized Deck as "${existingMemorized.english}".`);
+      }
+
       decks.custom.push({ korean: kor, english: eng || "Translation unavailable" });
       saveWordsToStorage();
       renderCustomList();
+
+      if (currentDeckKey === 'custom') {
+        setDeck('custom');
+      }
 
       document.getElementById("customKorean").value = "";
       document.getElementById("customEnglish").value = "";
