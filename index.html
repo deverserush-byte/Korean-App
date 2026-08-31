@@ -9,7 +9,12 @@
     body { background-color: #f8f9fa; color: #333; display: flex; justify-content: center; padding: 16px; }
     .app-container { width: 100%; max-width: 480px; background: #ffffff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; gap: 16px; }
     .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
+    .header-title-container { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .header-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; color: #666; text-transform: uppercase; }
+    
+    /* Streak & Protection Badges */
+    .streak-badge { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+    
     .pause-btn { background: #f0f0f0; border: none; border-radius: 50%; width: 32px; height: 32px; font-weight: bold; cursor: pointer; }
     .cards-row { display: flex; gap: 12px; }
     .card { flex: 1; border-radius: 16px; padding: 16px; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; position: relative; }
@@ -72,7 +77,11 @@
 
   <div class="app-container">
     <div class="header">
-      <span class="header-title">Korean Audio Practice</span>
+      <div class="header-title-container">
+        <span class="header-title">Korean Audio Practice</span>
+        <!-- Streak & Restoration Display Badge -->
+        <div class="streak-badge" id="streakBadge">🔥 0 Days (🛡️ 2/2)</div>
+      </div>
       <button class="pause-btn" id="togglePlayBtn">❚❚</button>
     </div>
 
@@ -100,11 +109,11 @@
 
     <hr style="border: 0; border-top: 1px solid #f0f0f0;">
 
-    <!-- Stats -->
+    <!-- Stats Grid -->
     <div class="stats-grid">
       <div>
-        <div class="stat-label">Total Spoken</div>
-        <div class="stat-value" id="spokenCount">0 times</div>
+        <div class="stat-label">Words Today</div>
+        <div class="stat-value" id="dailyGoalCount">0 / 10</div>
       </div>
       <div>
         <div class="stat-label">Current Deck</div>
@@ -216,7 +225,46 @@
       memorized: []
     };
 
-    // Load saved custom & memorized words automatically from browser memory
+    // State Variables
+    let currentDeckKey = "essential";
+    let activeList = [...decks.essential];
+    let currentIndex = 0;
+    let spokenCountToday = 0;
+    let currentStreak = 0;
+    let availableRestorations = 2; // Default 2 restorations per week
+    let lastWeekNumber = 0;
+    let goalReachedToday = false;
+    let isPlaying = true;
+    let orderMode = "random";
+    let delaySeconds = 5;
+    let timer = null;
+    let answerRevealed = false;
+    let isFolderOpen = false;
+    let isMemorizedFolderOpen = false;
+
+    // UI Elements
+    const displayWord = document.getElementById("displayWord");
+    const displayHint = document.getElementById("displayHint");
+    const cardIndexLabel = document.getElementById("cardIndexLabel");
+    const intervalLabel = document.getElementById("intervalLabel");
+    const dailyGoalCountEl = document.getElementById("dailyGoalCount");
+    const streakBadge = document.getElementById("streakBadge");
+    const deckLabel = document.getElementById("deckLabel");
+    const flowLabel = document.getElementById("flowLabel");
+    const delaySlider = document.getElementById("delaySlider");
+    const delayValText = document.getElementById("delayValText");
+    const customDeckBtn = document.getElementById("customDeckBtn");
+    const memorizedDeckBtn = document.getElementById("memorizedDeckBtn");
+    const customWordListContainer = document.getElementById("customWordListContainer");
+    const memorizedWordListContainer = document.getElementById("memorizedWordListContainer");
+    const folderToggleBtn = document.getElementById("folderToggleBtn");
+    const folderTitleText = document.getElementById("folderTitleText");
+    const folderArrow = document.getElementById("folderArrow");
+    const memorizedToggleBtn = document.getElementById("memorizedToggleBtn");
+    const memorizedTitleText = document.getElementById("memorizedTitleText");
+    const memorizedArrow = document.getElementById("memorizedArrow");
+
+    // Load saved custom & memorized words
     function loadSavedWords() {
       const storedCustom = localStorage.getItem("korean_custom_words");
       if (storedCustom) {
@@ -233,41 +281,108 @@
       localStorage.setItem("korean_memorized_words", JSON.stringify(decks.memorized));
     }
 
-    loadSavedWords();
+    // Helper functions for Date & Week calculations
+    function getTodayDate() {
+      const today = new Date();
+      return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    }
 
-    // State
-    let currentDeckKey = "essential";
-    let activeList = [...decks.essential];
-    let currentIndex = 0;
-    let spokenCount = 0;
-    let isPlaying = true;
-    let orderMode = "random";
-    let delaySeconds = 5;
-    let timer = null;
-    let answerRevealed = false;
-    let isFolderOpen = false;
-    let isMemorizedFolderOpen = false;
+    function getWeekNumber(d) {
+      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    }
 
-    // Elements
-    const displayWord = document.getElementById("displayWord");
-    const displayHint = document.getElementById("displayHint");
-    const cardIndexLabel = document.getElementById("cardIndexLabel");
-    const intervalLabel = document.getElementById("intervalLabel");
-    const spokenCountEl = document.getElementById("spokenCount");
-    const deckLabel = document.getElementById("deckLabel");
-    const flowLabel = document.getElementById("flowLabel");
-    const delaySlider = document.getElementById("delaySlider");
-    const delayValText = document.getElementById("delayValText");
-    const customDeckBtn = document.getElementById("customDeckBtn");
-    const memorizedDeckBtn = document.getElementById("memorizedDeckBtn");
-    const customWordListContainer = document.getElementById("customWordListContainer");
-    const memorizedWordListContainer = document.getElementById("memorizedWordListContainer");
-    const folderToggleBtn = document.getElementById("folderToggleBtn");
-    const folderTitleText = document.getElementById("folderTitleText");
-    const folderArrow = document.getElementById("folderArrow");
-    const memorizedToggleBtn = document.getElementById("memorizedToggleBtn");
-    const memorizedTitleText = document.getElementById("memorizedTitleText");
-    const memorizedArrow = document.getElementById("memorizedArrow");
+    function loadStreakData() {
+      const today = getTodayDate();
+      const currentWeek = getWeekNumber(today);
+      const savedDateStr = localStorage.getItem("korean_last_date");
+      const savedStreak = parseInt(localStorage.getItem("korean_streak") || "0");
+      const savedCount = parseInt(localStorage.getItem("korean_words_today") || "0");
+      const savedGoal = localStorage.getItem("korean_goal_reached") === "true";
+      let savedRestorations = parseInt(localStorage.getItem("korean_restorations") || "2");
+      let savedWeek = parseInt(localStorage.getItem("korean_last_week") || "0");
+
+      // Weekly Reset logic: Reset restorations to 2 if a new week started
+      if (savedWeek !== currentWeek) {
+        savedRestorations = 2;
+        lastWeekNumber = currentWeek;
+      } else {
+        lastWeekNumber = savedWeek;
+      }
+      availableRestorations = savedRestorations;
+
+      if (savedDateStr) {
+        const lastDate = new Date(savedDateStr);
+        const diffTime = Math.abs(today - lastDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) {
+          // Same day
+          spokenCountToday = savedCount;
+          currentStreak = savedStreak;
+          goalReachedToday = savedGoal;
+        } else if (diffDays === 1) {
+          // Next day consecutively
+          spokenCountToday = 0;
+          currentStreak = savedStreak;
+          goalReachedToday = false;
+        } else {
+          // Missed 1 or more days
+          const missedDays = diffDays - 1;
+
+          if (availableRestorations >= missedDays && savedStreak > 0) {
+            // Auto Restoration active!
+            availableRestorations -= missedDays;
+            currentStreak = savedStreak; // Streak protected!
+            alert(`🛡️ Streak Protection Activated!\nYou missed ${missedDays} day(s), but your streak was saved! (${availableRestorations}/2 restorations left for this week).`);
+          } else {
+            // Restorations exhausted or streak was 0
+            currentStreak = 0;
+            alert(`💔 Streak Lost!\nYou missed ${missedDays} day(s) and didn't have enough restorations left. Start fresh today!`);
+          }
+          spokenCountToday = 0;
+          goalReachedToday = false;
+        }
+      } else {
+        // First time user
+        spokenCountToday = 0;
+        currentStreak = 0;
+        goalReachedToday = false;
+      }
+
+      saveStreakData();
+      updateStreakUI();
+    }
+
+    function saveStreakData() {
+      const todayStr = getTodayDate().toISOString();
+      localStorage.setItem("korean_last_date", todayStr);
+      localStorage.setItem("korean_streak", currentStreak.toString());
+      localStorage.setItem("korean_words_today", spokenCountToday.toString());
+      localStorage.setItem("korean_goal_reached", goalReachedToday.toString());
+      localStorage.setItem("korean_restorations", availableRestorations.toString());
+      localStorage.setItem("korean_last_week", lastWeekNumber.toString());
+    }
+
+    function updateStreakUI() {
+      streakBadge.innerText = `🔥 ${currentStreak} Day${currentStreak === 1 ? '' : 's'} (🛡️ ${availableRestorations}/2)`;
+      dailyGoalCountEl.innerText = `${spokenCountToday} / 10`;
+    }
+
+    function recordWordSpoken() {
+      spokenCountToday++;
+      
+      if (spokenCountToday >= 10 && !goalReachedToday) {
+        goalReachedToday = true;
+        currentStreak++;
+        alert(`🎉 Awesome job! You practiced 10 words today and kept your streak alive!\n🔥 Streak: ${currentStreak} Day(s)`);
+      }
+      
+      saveStreakData();
+      updateStreakUI();
+    }
 
     function speakKorean(text) {
       if ('speechSynthesis' in window) {
@@ -276,8 +391,8 @@
         utterance.lang = 'ko-KR';
         utterance.rate = 0.8;
         window.speechSynthesis.speak(utterance);
-        spokenCount++;
-        spokenCountEl.innerText = `${spokenCount} times`;
+        
+        recordWordSpoken();
       }
     }
 
@@ -352,10 +467,10 @@
       if (!item) return;
 
       const newKorean = prompt("Edit Korean Word:", item.korean);
-      if (newKorean === null) return; // Cancelled
+      if (newKorean === null) return;
 
       const newEnglish = prompt("Edit English Translation / Meanings:", item.english);
-      if (newEnglish === null) return; // Cancelled
+      if (newEnglish === null) return;
 
       const trimmedKor = newKorean.trim();
       const trimmedEng = newEnglish.trim();
@@ -403,12 +518,10 @@
       if (activeList.length === 0) return;
       const wordObj = activeList[currentIndex];
       
-      // Add to memorized deck if not already there
       if (!decks.memorized.some(w => w.korean === wordObj.korean)) {
         decks.memorized.push(wordObj);
       }
 
-      // If removed from custom deck
       if (currentDeckKey === 'custom') {
         const customIndex = decks.custom.findIndex(w => w.korean === wordObj.korean);
         if (customIndex !== -1) decks.custom.splice(customIndex, 1);
@@ -417,7 +530,6 @@
       saveWordsToStorage();
       renderCustomList();
 
-      // Move to next card and update
       activeList.splice(currentIndex, 1);
       if (currentIndex >= activeList.length) {
         currentIndex = 0;
@@ -594,12 +706,12 @@
         eng = await translateKoreanToEnglish(kor);
       }
 
-      // Check if word already exists in Custom Deck
+      // Check duplicate in Custom Deck
       const existingCustom = decks.custom.find(item => item.korean === kor);
 
       if (existingCustom) {
         const updateMeaning = confirm(
-          `⚠️ Duplicate Word Detected!\n\n"${kor}" is already saved with the meaning:\n👉 "${existingCustom.english}"\n\nSince Korean words can have multiple meanings, would you like to append/add this new translation ("${eng}") to the existing word?`
+          `⚠️ Duplicate Word Detected!\n\n"${kor}" is already saved with the meaning:\n👉 "${existingCustom.english}"\n\nWould you like to append/add this new translation ("${eng}") to the existing word?`
         );
 
         if (updateMeaning) {
@@ -610,10 +722,10 @@
           document.getElementById("customKorean").value = "";
           document.getElementById("customEnglish").value = "";
         }
-        return; // Prevents creating a duplicate card entry
+        return;
       }
 
-      // Check if word is already in Memorized Deck
+      // Check duplicate in Memorized Deck
       const existingMemorized = decks.memorized.find(item => item.korean === kor);
       if (existingMemorized) {
         alert(`⚠️ Note: "${kor}" is currently saved in your Memorized Deck as "${existingMemorized.english}".`);
@@ -631,7 +743,9 @@
       document.getElementById("customEnglish").value = "";
     });
 
-    // Init
+    // Init App
+    loadSavedWords();
+    loadStreakData();
     renderCustomList();
     updateCardDisplay();
     resetTimer();
