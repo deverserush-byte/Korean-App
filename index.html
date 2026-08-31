@@ -325,6 +325,10 @@
       return dateObj.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
+    function generateId() {
+      return 'id_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+    }
+
     function loadSavedWords() {
       const storedCustom = localStorage.getItem("korean_custom_words");
       if (storedCustom) {
@@ -332,7 +336,7 @@
           decks.custom = JSON.parse(storedCustom); 
           decks.custom.forEach(item => {
             if (!item.addedDate) item.addedDate = getDisplayDateString();
-            if (!item.id) item.id = Date.now() + Math.random();
+            if (!item.id) item.id = generateId();
           });
         } catch (e) { decks.custom = []; }
       }
@@ -343,7 +347,7 @@
           decks.memorized = JSON.parse(storedMemorized);
           decks.memorized.forEach(item => {
             if (!item.addedDate) item.addedDate = getDisplayDateString();
-            if (!item.id) item.id = Date.now() + Math.random();
+            if (!item.id) item.id = generateId();
           });
         } catch (e) { decks.memorized = []; }
       }
@@ -493,15 +497,15 @@
       if (customCount === 0) {
         customWordListContainer.innerHTML = `<div class="empty-list-text">No custom words added yet.</div>`;
       } else {
-        customWordListContainer.innerHTML = decks.custom.map((item, index) => `
+        customWordListContainer.innerHTML = decks.custom.map((item) => `
           <div class="custom-word-item">
             <div>
               <span class="custom-word-kor">${item.korean}</span>
               <span class="custom-word-eng">- ${item.english}</span>
             </div>
             <div class="action-btn-group">
-              <button class="edit-btn" onclick="editCustomWordById('${item.id}')">Edit</button>
-              <button class="delete-btn" onclick="deleteCustomWordById('${item.id}')">Delete</button>
+              <button class="edit-btn" data-action="edit" data-id="${item.id}">Edit</button>
+              <button class="delete-btn" data-action="delete" data-id="${item.id}">Delete</button>
             </div>
           </div>
         `).join("");
@@ -510,19 +514,18 @@
       if (memorizedCount === 0) {
         memorizedWordListContainer.innerHTML = `<div class="empty-list-text">No memorized words saved yet.</div>`;
       } else {
-        memorizedWordListContainer.innerHTML = decks.memorized.map((item, index) => `
+        memorizedWordListContainer.innerHTML = decks.memorized.map((item) => `
           <div class="custom-word-item">
             <div>
               <span class="custom-word-kor">${item.korean}</span>
               <span class="custom-word-eng">- ${item.english}</span>
             </div>
-            <button class="restore-btn" onclick="restoreMemorizedWordById('${item.id}')">Unmemorize</button>
+            <button class="restore-btn" data-action="unmemorize" data-id="${item.id}">Unmemorize</button>
           </div>
         `).join("");
       }
     }
 
-    // Render Tab 2 (History Log) sorted newest first & editable
     function renderDateHistoryTab() {
       const container = document.getElementById("dateHistoryContainer");
       const allWords = [...decks.custom, ...decks.memorized];
@@ -532,7 +535,6 @@
         return;
       }
 
-      // Group words by date, preserving newest-first order
       const groupedByDate = {};
       allWords.forEach(word => {
         const dateKey = word.addedDate || getDisplayDateString();
@@ -554,7 +556,7 @@
 
         html += `
           <div class="date-group-card">
-            <div class="date-group-header" onclick="toggleDateGroup('${date}')">
+            <div class="date-group-header" data-action="toggle-date" data-date="${date}">
               <span>📅 ${date} (${wordsInDate.length} word${wordsInDate.length === 1 ? '' : 's'})</span>
               <span>${isExpanded ? '▲' : '▼'}</span>
             </div>
@@ -566,8 +568,8 @@
                     <span class="history-word-eng">- ${item.english}</span>
                   </div>
                   <div class="action-btn-group">
-                    <button class="edit-btn" onclick="editCustomWordById('${item.id}')">Edit</button>
-                    <button class="history-speak-btn" onclick="speakKorean('${item.korean}')">🔊</button>
+                    <button class="edit-btn" data-action="edit" data-id="${item.id}">Edit</button>
+                    <button class="history-speak-btn" data-action="speak" data-text="${item.korean}">🔊</button>
                   </div>
                 </div>
               `).join('')}
@@ -579,19 +581,14 @@
       container.innerHTML = html;
     }
 
-    window.toggleDateGroup = function(date) {
-      dateCollapseState[date] = !dateCollapseState[date];
-      renderDateHistoryTab();
-    };
-
-    // Generic Edit Word by unique ID
-    window.editCustomWordById = function(id) {
+    // Handlers
+    function editCustomWordById(id) {
       let targetDeck = decks.custom;
-      let item = targetDeck.find(w => w.id === id);
+      let item = targetDeck.find(w => String(w.id) === String(id));
 
       if (!item) {
         targetDeck = decks.memorized;
-        item = targetDeck.find(w => w.id === id);
+        item = targetDeck.find(w => String(w.id) === String(id));
       }
 
       if (!item) return;
@@ -620,10 +617,10 @@
       if (currentDeckKey === 'custom' || currentDeckKey === 'memorized') {
         setDeck(currentDeckKey);
       }
-    };
+    }
 
-    window.deleteCustomWordById = function(id) {
-      const idx = decks.custom.findIndex(w => w.id === id);
+    function deleteCustomWordById(id) {
+      const idx = decks.custom.findIndex(w => String(w.id) === String(id));
       if (idx !== -1) {
         decks.custom.splice(idx, 1);
         saveWordsToStorage();
@@ -631,13 +628,12 @@
         renderDateHistoryTab();
         if (currentDeckKey === 'custom') setDeck('custom');
       }
-    };
+    }
 
-    window.restoreMemorizedWordById = function(id) {
-      const idx = decks.memorized.findIndex(w => w.id === id);
+    function restoreMemorizedWordById(id) {
+      const idx = decks.memorized.findIndex(w => String(w.id) === String(id));
       if (idx !== -1) {
         const restored = decks.memorized.splice(idx, 1)[0];
-        // Add restored word to top of custom deck
         decks.custom.unshift(restored);
         saveWordsToStorage();
         renderCustomList();
@@ -646,7 +642,31 @@
           setDeck(currentDeckKey);
         }
       }
-    };
+    }
+
+    // Robust Global Event Listener for Dynamic Buttons
+    document.addEventListener("click", function (e) {
+      const btn = e.target.closest("[data-action]");
+      if (!btn) return;
+
+      const action = btn.getAttribute("data-action");
+      const id = btn.getAttribute("data-id");
+
+      if (action === "edit") {
+        editCustomWordById(id);
+      } else if (action === "delete") {
+        deleteCustomWordById(id);
+      } else if (action === "unmemorize") {
+        restoreMemorizedWordById(id);
+      } else if (action === "speak") {
+        const text = btn.getAttribute("data-text");
+        if (text) speakKorean(text);
+      } else if (action === "toggle-date") {
+        const date = btn.getAttribute("data-date");
+        dateCollapseState[date] = !dateCollapseState[date];
+        renderDateHistoryTab();
+      }
+    });
 
     function markCurrentAsMemorized() {
       if (activeList.length === 0) return;
@@ -839,9 +859,7 @@
 
       const todayFormatted = getDisplayDateString();
 
-      // Check duplicates
       const existingCustom = decks.custom.find(item => item.korean === kor);
-
       if (existingCustom) {
         const updateMeaning = confirm(
           `⚠️ Duplicate Word Detected!\n\n"${kor}" is already saved with the meaning:\n👉 "${existingCustom.english}"\n\nWould you like to append this new translation ("${eng}") to the existing word?`
@@ -864,9 +882,8 @@
         alert(`⚠️ Note: "${kor}" is currently saved in your Memorized Deck as "${existingMemorized.english}".`);
       }
 
-      // Add new word to the VERY TOP (unshift)
       decks.custom.unshift({ 
-        id: Date.now() + Math.random(),
+        id: generateId(),
         korean: kor, 
         english: eng || "Translation unavailable",
         addedDate: todayFormatted 
