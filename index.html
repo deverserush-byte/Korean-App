@@ -69,7 +69,7 @@
     .memorized-toggle-btn { background: #fff7ed; color: #d97706; border-color: #ffedd5; }
     .custom-word-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
     .custom-word-item { display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; }
-    .action-btn-group { display: flex; gap: 4px; }
+    .action-btn-group { display: flex; gap: 4px; align-items: center; }
     .custom-word-kor { font-weight: bold; color: #222; }
     .custom-word-eng { color: #666; font-size: 11px; margin-left: 6px; }
     .edit-btn { background: #edf2f7; color: #4a5568; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
@@ -104,7 +104,7 @@
       <div class="header">
         <div class="header-title-container">
           <span class="header-title">Korean Audio Practice</span>
-          <!-- Streak & Restoration Display Badge -->
+          <!-- Streak Badge -->
           <div class="streak-badge" id="streakBadge">🔥 0 Days (🛡️ 2/2)</div>
         </div>
         <button class="pause-btn" id="togglePlayBtn">❚❚</button>
@@ -150,7 +150,7 @@
         </div>
       </div>
 
-      <!-- Vocabulary Deck Selection -->
+      <!-- Deck Selection -->
       <div class="control-group">
         <div class="control-label">Select Vocabulary Deck</div>
         <div class="segmented-control" id="deckSelector">
@@ -191,7 +191,7 @@
         <button class="btn btn-warning" id="memorizeCurrentBtn">🧠 Memorized</button>
       </div>
 
-      <!-- Add Custom Vocabulary & Saved List -->
+      <!-- Add Custom Vocabulary Form -->
       <div class="add-word-card">
         <div class="add-word-title">ADD CUSTOM VOCABULARY WORD</div>
         <div class="input-field-container">
@@ -201,7 +201,7 @@
         <input type="text" class="input-field" id="customEnglish" placeholder="English Translation (e.g. School)">
         <button class="btn-add" id="addWordBtn">+ Add Word to Custom Deck List</button>
 
-        <!-- Custom Folder Dropdown -->
+        <!-- Folders -->
         <div class="custom-list-container">
           <button class="folder-toggle-btn" id="folderToggleBtn">
             <span id="folderTitleText">📁 Saved Custom Words (0)</span>
@@ -211,7 +211,6 @@
             <div class="empty-list-text">No custom words added yet.</div>
           </div>
 
-          <!-- Memorized Folder Dropdown -->
           <button class="folder-toggle-btn memorized-toggle-btn" id="memorizedToggleBtn">
             <span id="memorizedTitleText">🧠 Memorized Words (0)</span>
             <span id="memorizedArrow">▼</span>
@@ -227,11 +226,11 @@
     <div id="historyTab" class="tab-content hidden">
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <h3 style="font-size: 15px; font-weight: 700; color: #1e293b;">📅 Vocabulary Added By Date</h3>
-        <p style="font-size: 11px; color: #64748b;">Click any date header to expand or collapse words added on that day.</p>
+        <p style="font-size: 11px; color: #64748b;">Click headers to expand/collapse. Words can be edited directly here.</p>
       </div>
 
       <div id="dateHistoryContainer" style="display: flex; flex-direction: column; gap: 10px;">
-        <!-- Dynamic Date Accordions Will Be Rendered Here -->
+        <!-- Dynamic Accordion Entries Rendered Here -->
       </div>
     </div>
   </div>
@@ -263,7 +262,6 @@
       memorized: []
     };
 
-    // State Variables
     let currentDeckKey = "essential";
     let activeList = [...decks.essential];
     let currentIndex = 0;
@@ -279,11 +277,8 @@
     let answerRevealed = false;
     let isFolderOpen = false;
     let isMemorizedFolderOpen = false;
-
-    // Track collapse state for history dates
     let dateCollapseState = {};
 
-    // UI Elements
     const displayWord = document.getElementById("displayWord");
     const displayHint = document.getElementById("displayHint");
     const cardIndexLabel = document.getElementById("cardIndexLabel");
@@ -305,7 +300,7 @@
     const memorizedTitleText = document.getElementById("memorizedTitleText");
     const memorizedArrow = document.getElementById("memorizedArrow");
 
-    // Tab Switching Logic
+    // Tab Navigation
     window.switchTab = function(tabName) {
       const practiceTab = document.getElementById("practiceTab");
       const historyTab = document.getElementById("historyTab");
@@ -322,24 +317,22 @@
         historyTab.classList.remove("hidden");
         tabPracticeBtn.classList.remove("active");
         tabHistoryBtn.classList.add("active");
-        renderDateHistoryTab(); // Refresh history view on open
+        renderDateHistoryTab();
       }
     };
 
-    // Date formatting helper
     function getDisplayDateString(dateObj = new Date()) {
       return dateObj.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
-    // Load saved custom & memorized words
     function loadSavedWords() {
       const storedCustom = localStorage.getItem("korean_custom_words");
       if (storedCustom) {
         try { 
           decks.custom = JSON.parse(storedCustom); 
-          // Ensure all words have a date field
           decks.custom.forEach(item => {
             if (!item.addedDate) item.addedDate = getDisplayDateString();
+            if (!item.id) item.id = Date.now() + Math.random();
           });
         } catch (e) { decks.custom = []; }
       }
@@ -350,6 +343,7 @@
           decks.memorized = JSON.parse(storedMemorized);
           decks.memorized.forEach(item => {
             if (!item.addedDate) item.addedDate = getDisplayDateString();
+            if (!item.id) item.id = Date.now() + Math.random();
           });
         } catch (e) { decks.memorized = []; }
       }
@@ -444,13 +438,11 @@
 
     function recordWordSpoken() {
       spokenCountToday++;
-      
       if (spokenCountToday >= 10 && !goalReachedToday) {
         goalReachedToday = true;
         currentStreak++;
         alert(`🎉 Awesome job! You practiced 10 words today and kept your streak alive!\n🔥 Streak: ${currentStreak} Day(s)`);
       }
-      
       saveStreakData();
       updateStreakUI();
     }
@@ -462,7 +454,6 @@
         utterance.lang = 'ko-KR';
         utterance.rate = 0.8;
         window.speechSynthesis.speak(utterance);
-        
         recordWordSpoken();
       }
     }
@@ -499,7 +490,6 @@
       folderTitleText.innerText = `📁 Saved Custom Words (${customCount})`;
       memorizedTitleText.innerText = `🧠 Memorized Words (${memorizedCount})`;
 
-      // Render Custom List
       if (customCount === 0) {
         customWordListContainer.innerHTML = `<div class="empty-list-text">No custom words added yet.</div>`;
       } else {
@@ -510,14 +500,13 @@
               <span class="custom-word-eng">- ${item.english}</span>
             </div>
             <div class="action-btn-group">
-              <button class="edit-btn" onclick="editCustomWord(${index})">Edit</button>
-              <button class="delete-btn" onclick="deleteCustomWord(${index})">Delete</button>
+              <button class="edit-btn" onclick="editCustomWordById('${item.id}')">Edit</button>
+              <button class="delete-btn" onclick="deleteCustomWordById('${item.id}')">Delete</button>
             </div>
           </div>
         `).join("");
       }
 
-      // Render Memorized List
       if (memorizedCount === 0) {
         memorizedWordListContainer.innerHTML = `<div class="empty-list-text">No memorized words saved yet.</div>`;
       } else {
@@ -527,13 +516,13 @@
               <span class="custom-word-kor">${item.korean}</span>
               <span class="custom-word-eng">- ${item.english}</span>
             </div>
-            <button class="restore-btn" onclick="restoreMemorizedWord(${index})">Unmemorize</button>
+            <button class="restore-btn" onclick="restoreMemorizedWordById('${item.id}')">Unmemorize</button>
           </div>
         `).join("");
       }
     }
 
-    // TAB 2: Render Vocabulary History Grouped by Date
+    // Render Tab 2 (History Log) sorted newest first & editable
     function renderDateHistoryTab() {
       const container = document.getElementById("dateHistoryContainer");
       const allWords = [...decks.custom, ...decks.memorized];
@@ -543,7 +532,7 @@
         return;
       }
 
-      // Group words by Date
+      // Group words by date, preserving newest-first order
       const groupedByDate = {};
       allWords.forEach(word => {
         const dateKey = word.addedDate || getDisplayDateString();
@@ -553,10 +542,9 @@
         groupedByDate[dateKey].push(word);
       });
 
-      // Default expand today's date if not set
       const todayStr = getDisplayDateString();
       if (dateCollapseState[todayStr] === undefined) {
-        dateCollapseState[todayStr] = true; // Open today by default
+        dateCollapseState[todayStr] = true;
       }
 
       let html = "";
@@ -577,7 +565,10 @@
                     <span class="history-word-kor">${item.korean}</span>
                     <span class="history-word-eng">- ${item.english}</span>
                   </div>
-                  <button class="history-speak-btn" onclick="speakKorean('${item.korean}')">🔊</button>
+                  <div class="action-btn-group">
+                    <button class="edit-btn" onclick="editCustomWordById('${item.id}')">Edit</button>
+                    <button class="history-speak-btn" onclick="speakKorean('${item.korean}')">🔊</button>
+                  </div>
                 </div>
               `).join('')}
             </div>
@@ -593,8 +584,16 @@
       renderDateHistoryTab();
     };
 
-    window.editCustomWord = function(index) {
-      const item = decks.custom[index];
+    // Generic Edit Word by unique ID
+    window.editCustomWordById = function(id) {
+      let targetDeck = decks.custom;
+      let item = targetDeck.find(w => w.id === id);
+
+      if (!item) {
+        targetDeck = decks.memorized;
+        item = targetDeck.find(w => w.id === id);
+      }
+
       if (!item) return;
 
       const newKorean = prompt("Edit Korean Word:", item.korean);
@@ -611,38 +610,41 @@
         return;
       }
 
-      decks.custom[index] = {
-        ...item,
-        korean: trimmedKor,
-        english: trimmedEng || "Translation unavailable"
-      };
+      item.korean = trimmedKor;
+      item.english = trimmedEng || "Translation unavailable";
 
       saveWordsToStorage();
       renderCustomList();
+      renderDateHistoryTab();
 
-      if (currentDeckKey === 'custom') {
-        setDeck('custom');
-      }
-    };
-
-    window.deleteCustomWord = function(index) {
-      decks.custom.splice(index, 1);
-      saveWordsToStorage();
-      renderCustomList();
-      if (currentDeckKey === 'custom') {
-        setDeck('custom');
-      }
-    };
-
-    window.restoreMemorizedWord = function(index) {
-      const restored = decks.memorized.splice(index, 1)[0];
-      if (restored) {
-        decks.custom.push(restored);
-      }
-      saveWordsToStorage();
-      renderCustomList();
-      if (currentDeckKey === 'memorized' || currentDeckKey === 'custom') {
+      if (currentDeckKey === 'custom' || currentDeckKey === 'memorized') {
         setDeck(currentDeckKey);
+      }
+    };
+
+    window.deleteCustomWordById = function(id) {
+      const idx = decks.custom.findIndex(w => w.id === id);
+      if (idx !== -1) {
+        decks.custom.splice(idx, 1);
+        saveWordsToStorage();
+        renderCustomList();
+        renderDateHistoryTab();
+        if (currentDeckKey === 'custom') setDeck('custom');
+      }
+    };
+
+    window.restoreMemorizedWordById = function(id) {
+      const idx = decks.memorized.findIndex(w => w.id === id);
+      if (idx !== -1) {
+        const restored = decks.memorized.splice(idx, 1)[0];
+        // Add restored word to top of custom deck
+        decks.custom.unshift(restored);
+        saveWordsToStorage();
+        renderCustomList();
+        renderDateHistoryTab();
+        if (currentDeckKey === 'memorized' || currentDeckKey === 'custom') {
+          setDeck(currentDeckKey);
+        }
       }
     };
 
@@ -651,7 +653,7 @@
       const wordObj = activeList[currentIndex];
       
       if (!decks.memorized.some(w => w.korean === wordObj.korean)) {
-        decks.memorized.push(wordObj);
+        decks.memorized.unshift(wordObj);
       }
 
       if (currentDeckKey === 'custom') {
@@ -661,6 +663,7 @@
 
       saveWordsToStorage();
       renderCustomList();
+      renderDateHistoryTab();
 
       activeList.splice(currentIndex, 1);
       if (currentIndex >= activeList.length) {
@@ -686,10 +689,6 @@
     function setDeck(deckKey) {
       currentDeckKey = deckKey;
       deckLabel.innerText = deckKey.charAt(0).toUpperCase() + deckKey.slice(1);
-      
-      if (deckKey === 'custom' && decks.custom.length === 0) {
-        alert("Custom deck is empty. Add a word below!");
-      }
 
       if (orderMode === "random") {
         activeList = shuffleArray(decks[deckKey]);
@@ -840,18 +839,19 @@
 
       const todayFormatted = getDisplayDateString();
 
-      // Check duplicate in Custom Deck
+      // Check duplicates
       const existingCustom = decks.custom.find(item => item.korean === kor);
 
       if (existingCustom) {
         const updateMeaning = confirm(
-          `⚠️ Duplicate Word Detected!\n\n"${kor}" is already saved with the meaning:\n👉 "${existingCustom.english}"\n\nWould you like to append/add this new translation ("${eng}") to the existing word?`
+          `⚠️ Duplicate Word Detected!\n\n"${kor}" is already saved with the meaning:\n👉 "${existingCustom.english}"\n\nWould you like to append this new translation ("${eng}") to the existing word?`
         );
 
         if (updateMeaning) {
           existingCustom.english += `, ${eng}`;
           saveWordsToStorage();
           renderCustomList();
+          renderDateHistoryTab();
           if (currentDeckKey === 'custom') setDeck('custom');
           document.getElementById("customKorean").value = "";
           document.getElementById("customEnglish").value = "";
@@ -859,14 +859,14 @@
         return;
       }
 
-      // Check duplicate in Memorized Deck
       const existingMemorized = decks.memorized.find(item => item.korean === kor);
       if (existingMemorized) {
         alert(`⚠️ Note: "${kor}" is currently saved in your Memorized Deck as "${existingMemorized.english}".`);
       }
 
-      // Add new word with date timestamp
-      decks.custom.push({ 
+      // Add new word to the VERY TOP (unshift)
+      decks.custom.unshift({ 
+        id: Date.now() + Math.random(),
         korean: kor, 
         english: eng || "Translation unavailable",
         addedDate: todayFormatted 
@@ -874,6 +874,7 @@
 
       saveWordsToStorage();
       renderCustomList();
+      renderDateHistoryTab();
 
       if (currentDeckKey === 'custom') {
         setDeck('custom');
