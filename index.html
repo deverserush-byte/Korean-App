@@ -4,11 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Korean Audio Practice</title>
+
+  <!-- Firebase Web SDK v9 (Compat version for single-file HTML apps) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     body { background-color: #f8f9fa; color: #333; display: flex; justify-content: center; padding: 16px; }
     .app-container { width: 100%; max-width: 480px; background: #ffffff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; gap: 16px; }
     
+    /* Auth Header Bar */
+    .auth-bar { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .auth-user-info { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #166534; }
+    .auth-btn { background: #16a34a; color: #ffffff; border: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; cursor: pointer; font-size: 11px; transition: background 0.2s; }
+    .auth-btn:hover { background: #15803d; }
+    .auth-btn.logout { background: #ef4444; }
+    .auth-btn.logout:hover { background: #dc2626; }
+    .sync-status { font-size: 10px; color: #65a30d; margin-top: 2px; }
+
     /* Top Navigation Tabs */
     .tab-navigation { display: flex; background: #f0f4ff; padding: 4px; border-radius: 14px; gap: 4px; }
     .tab-btn { flex: 1; border: none; background: transparent; padding: 10px 0; font-size: 12px; font-weight: 700; color: #666; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; }
@@ -96,6 +111,15 @@
 <body>
 
   <div class="app-container">
+    <!-- Cloud Account Authentication Banner -->
+    <div class="auth-bar">
+      <div>
+        <div class="auth-user-info" id="authUserInfo">☁️ Guest Mode (Local Only)</div>
+        <div class="sync-status" id="syncStatus">Sign in to sync across iOS & Android</div>
+      </div>
+      <button class="auth-btn" id="authBtn" onclick="handleAuthAction()">Sign In</button>
+    </div>
+
     <!-- Top Navigation Tabs -->
     <div class="tab-navigation">
       <button class="tab-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">🎧 Dictation Practice</button>
@@ -107,7 +131,6 @@
       <div class="header">
         <div class="header-title-container">
           <span class="header-title">Korean Audio Practice</span>
-          <!-- Streak Badge -->
           <div class="streak-badge" id="streakBadge">🔥 0 Days (🛡️ 2/2)</div>
         </div>
         <button class="pause-btn" id="togglePlayBtn">❚❚</button>
@@ -239,6 +262,59 @@
   </div>
 
   <script>
+    // --- FIREBASE CONFIGURATION (YOUR PROJECT CREDENTIALS) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvBZnLDplFvufjtTU66-rW5Spb9QW6bs0",
+      authDomain: "koreanvocabapp-cd32c.firebaseapp.com",
+      projectId: "koreanvocabapp-cd32c",
+      storageBucket: "koreanvocabapp-cd32c.firebasestorage.app",
+      messagingSenderId: "328663899339",
+      appId: "1:328663899339:web:427a0d8598e6024509cf4e"
+    };
+
+    let currentUser = null;
+    let db = null;
+    let auth = null;
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          currentUser = user;
+          document.getElementById("authUserInfo").innerText = `👤 ${user.displayName || user.email}`;
+          document.getElementById("syncStatus").innerText = "⚡ Connected & Cloud Synced";
+          document.getElementById("authBtn").innerText = "Sign Out";
+          document.getElementById("authBtn").classList.add("logout");
+          loadCloudData(user.uid);
+        } else {
+          currentUser = null;
+          document.getElementById("authUserInfo").innerText = "☁️ Guest Mode (Local Only)";
+          document.getElementById("syncStatus").innerText = "Sign in to sync across iOS & Android";
+          document.getElementById("authBtn").innerText = "Sign In";
+          document.getElementById("authBtn").classList.remove("logout");
+        }
+      });
+    } catch (e) {
+      console.warn("Firebase initialization error:", e);
+    }
+
+    function handleAuthAction() {
+      if (!auth) {
+        alert("Firebase Auth is not properly initialized.");
+        return;
+      }
+      if (currentUser) {
+        auth.signOut();
+      } else {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(err => alert("Sign-in error: " + err.message));
+      }
+    }
+
+    // --- APP CORE DATA & LOGIC ---
     const decks = {
       essential: [
         { korean: "안녕하세요", english: "Hello" },
@@ -303,7 +379,6 @@
     const memorizedTitleText = document.getElementById("memorizedTitleText");
     const memorizedArrow = document.getElementById("memorizedArrow");
 
-    // Tab Navigation
     window.switchTab = function(tabName) {
       const practiceTab = document.getElementById("practiceTab");
       const historyTab = document.getElementById("historyTab");
@@ -332,6 +407,59 @@
       return 'id_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
     }
 
+    function saveWordsToStorage() {
+      localStorage.setItem("korean_custom_words", JSON.stringify(decks.custom));
+      localStorage.setItem("korean_memorized_words", JSON.stringify(decks.memorized));
+      syncToCloud();
+    }
+
+    function syncToCloud() {
+      if (currentUser && db) {
+        document.getElementById("syncStatus").innerText = "⏳ Syncing...";
+        const userDocRef = db.collection("vocab_users").doc(currentUser.uid);
+        userDocRef.set({
+          custom: decks.custom,
+          memorized: decks.memorized,
+          streak: currentStreak,
+          spokenCountToday: spokenCountToday,
+          lastDate: getTodayDate().toISOString(),
+          goalReachedToday: goalReachedToday,
+          availableRestorations: availableRestorations,
+          lastWeekNumber: lastWeekNumber
+        }, { merge: true }).then(() => {
+          document.getElementById("syncStatus").innerText = "⚡ Connected & Cloud Synced";
+        }).catch(err => {
+          console.error("Cloud save failed:", err);
+          document.getElementById("syncStatus").innerText = "⚠️ Sync Error";
+        });
+      }
+    }
+
+    function loadCloudData(uid) {
+      if (!db) return;
+      document.getElementById("syncStatus").innerText = "⏳ Fetching progress...";
+      db.collection("vocab_users").doc(uid).get().then((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.custom) decks.custom = data.custom;
+          if (data.memorized) decks.memorized = data.memorized;
+          if (data.streak !== undefined) currentStreak = data.streak;
+          if (data.spokenCountToday !== undefined) spokenCountToday = data.spokenCountToday;
+          if (data.goalReachedToday !== undefined) goalReachedToday = data.goalReachedToday;
+          if (data.availableRestorations !== undefined) availableRestorations = data.availableRestorations;
+          if (data.lastWeekNumber !== undefined) lastWeekNumber = data.lastWeekNumber;
+
+          saveWordsToStorage();
+          updateStreakUI();
+          renderCustomList();
+          updateCardDisplay();
+        } else {
+          syncToCloud();
+        }
+        document.getElementById("syncStatus").innerText = "⚡ Connected & Cloud Synced";
+      });
+    }
+
     function loadSavedWords() {
       const storedCustom = localStorage.getItem("korean_custom_words");
       if (storedCustom) {
@@ -354,11 +482,6 @@
           });
         } catch (e) { decks.memorized = []; }
       }
-    }
-
-    function saveWordsToStorage() {
-      localStorage.setItem("korean_custom_words", JSON.stringify(decks.custom));
-      localStorage.setItem("korean_memorized_words", JSON.stringify(decks.memorized));
     }
 
     function getTodayDate() {
@@ -406,14 +529,12 @@
           goalReachedToday = false;
         } else {
           const missedDays = diffDays - 1;
-
           if (availableRestorations >= missedDays && savedStreak > 0) {
             availableRestorations -= missedDays;
             currentStreak = savedStreak;
-            alert(`🛡️ Streak Protection Activated!\nYou missed ${missedDays} day(s), but your streak was saved! (${availableRestorations}/2 restorations left for this week).`);
+            alert(`🛡️ Streak Protection Activated!\nYou missed ${missedDays} day(s), but your streak was saved!`);
           } else {
             currentStreak = 0;
-            alert(`💔 Streak Lost!\nYou missed ${missedDays} day(s) and didn't have enough restorations left. Start fresh today!`);
           }
           spokenCountToday = 0;
           goalReachedToday = false;
@@ -436,6 +557,7 @@
       localStorage.setItem("korean_goal_reached", goalReachedToday.toString());
       localStorage.setItem("korean_restorations", availableRestorations.toString());
       localStorage.setItem("korean_last_week", lastWeekNumber.toString());
+      syncToCloud();
     }
 
     function updateStreakUI() {
@@ -448,7 +570,7 @@
       if (spokenCountToday >= 10 && !goalReachedToday) {
         goalReachedToday = true;
         currentStreak++;
-        alert(`🎉 Awesome job! You practiced 10 words today and kept your streak alive!\n🔥 Streak: ${currentStreak} Day(s)`);
+        alert(`🎉 Streak Kept Alive!\n🔥 Streak: ${currentStreak} Day(s)`);
       }
       saveStreakData();
       updateStreakUI();
@@ -541,16 +663,12 @@
       const groupedByDate = {};
       allWords.forEach(word => {
         const dateKey = word.addedDate || getDisplayDateString();
-        if (!groupedByDate[dateKey]) {
-          groupedByDate[dateKey] = [];
-        }
+        if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
         groupedByDate[dateKey].push(word);
       });
 
       const todayStr = getDisplayDateString();
-      if (dateCollapseState[todayStr] === undefined) {
-        dateCollapseState[todayStr] = true;
-      }
+      if (dateCollapseState[todayStr] === undefined) dateCollapseState[todayStr] = true;
 
       let html = "";
       Object.keys(groupedByDate).forEach(date => {
@@ -619,9 +737,7 @@
       renderCustomList();
       renderDateHistoryTab();
 
-      if (currentDeckKey === 'custom' || currentDeckKey === 'memorized') {
-        setDeck(currentDeckKey);
-      }
+      if (currentDeckKey === 'custom' || currentDeckKey === 'memorized') setDeck(currentDeckKey);
     }
 
     function deleteCustomWordById(id) {
@@ -643,9 +759,7 @@
         saveWordsToStorage();
         renderCustomList();
         renderDateHistoryTab();
-        if (currentDeckKey === 'memorized' || currentDeckKey === 'custom') {
-          setDeck(currentDeckKey);
-        }
+        if (currentDeckKey === 'memorized' || currentDeckKey === 'custom') setDeck(currentDeckKey);
       }
     }
 
@@ -660,15 +774,10 @@
       navigator.clipboard.writeText(textToCopy).then(() => {
         const originalText = btnElement.innerText;
         btnElement.innerText = "✅ Copied!";
-        setTimeout(() => {
-          btnElement.innerText = originalText;
-        }, 1500);
-      }).catch(err => {
-        alert("Could not copy words: " + err);
-      });
+        setTimeout(() => { btnElement.innerText = originalText; }, 1500);
+      }).catch(err => { alert("Could not copy words: " + err); });
     }
 
-    // Global Event Listener
     document.addEventListener("click", function (e) {
       const btn = e.target.closest("[data-action]");
       if (!btn) return;
@@ -676,13 +785,10 @@
       const action = btn.getAttribute("data-action");
       const id = btn.getAttribute("data-id");
 
-      if (action === "edit") {
-        editCustomWordById(id);
-      } else if (action === "delete") {
-        deleteCustomWordById(id);
-      } else if (action === "unmemorize") {
-        restoreMemorizedWordById(id);
-      } else if (action === "speak") {
+      if (action === "edit") editCustomWordById(id);
+      else if (action === "delete") deleteCustomWordById(id);
+      else if (action === "unmemorize") restoreMemorizedWordById(id);
+      else if (action === "speak") {
         const text = btn.getAttribute("data-text");
         if (text) speakKorean(text);
       } else if (action === "toggle-date") {
@@ -699,10 +805,7 @@
       if (activeList.length === 0) return;
       const wordObj = activeList[currentIndex];
       
-      if (!decks.memorized.some(w => w.korean === wordObj.korean)) {
-        decks.memorized.unshift(wordObj);
-      }
-
+      if (!decks.memorized.some(w => w.korean === wordObj.korean)) decks.memorized.unshift(wordObj);
       if (currentDeckKey === 'custom') {
         const customIndex = decks.custom.findIndex(w => w.korean === wordObj.korean);
         if (customIndex !== -1) decks.custom.splice(customIndex, 1);
@@ -713,9 +816,7 @@
       renderDateHistoryTab();
 
       activeList.splice(currentIndex, 1);
-      if (currentIndex >= activeList.length) {
-        currentIndex = 0;
-      }
+      if (currentIndex >= activeList.length) currentIndex = 0;
       updateCardDisplay();
       resetTimer();
     }
@@ -727,9 +828,7 @@
     function resetTimer() {
       if (timer) clearInterval(timer);
       if (isPlaying && activeList.length > 0) {
-        timer = setInterval(() => {
-          nextCard();
-        }, delaySeconds * 1000);
+        timer = setInterval(() => { nextCard(); }, delaySeconds * 1000);
       }
     }
 
@@ -737,11 +836,8 @@
       currentDeckKey = deckKey;
       deckLabel.innerText = deckKey.charAt(0).toUpperCase() + deckKey.slice(1);
 
-      if (orderMode === "random") {
-        activeList = shuffleArray(decks[deckKey]);
-      } else {
-        activeList = [...decks[deckKey]];
-      }
+      if (orderMode === "random") activeList = shuffleArray(decks[deckKey]);
+      else activeList = [...decks[deckKey]];
 
       currentIndex = 0;
       updateCardDisplay();
@@ -768,9 +864,7 @@
         if (data && data.responseData && data.responseData.translatedText) {
           return data.responseData.translatedText;
         }
-      } catch (err) {
-        console.error("Translation API failed", err);
-      }
+      } catch (err) { console.error("Translation API failed", err); }
       return "";
     }
 
@@ -788,20 +882,12 @@
 
     document.getElementById("autoTranslateBtn").addEventListener("click", async () => {
       const kor = document.getElementById("customKorean").value.trim();
-      if (!kor) {
-        alert("Please enter a Korean word first.");
-        return;
-      }
-      
+      if (!kor) { alert("Please enter a Korean word first."); return; }
       const translateBtn = document.getElementById("autoTranslateBtn");
       translateBtn.innerText = "Translating...";
-      
       const translation = await translateKoreanToEnglish(kor);
-      if (translation) {
-        document.getElementById("customEnglish").value = translation;
-      } else {
-        alert("Could not translate automatically. Please type the translation manually.");
-      }
+      if (translation) document.getElementById("customEnglish").value = translation;
+      else alert("Could not translate automatically.");
       translateBtn.innerText = "✨ Auto Translate";
     });
 
@@ -835,15 +921,11 @@
       if (isPlaying) {
         resetTimer();
         speakKorean(activeList[currentIndex].korean);
-      } else {
-        if (timer) clearInterval(timer);
-      }
+      } else if (timer) clearInterval(timer);
     });
 
     document.getElementById("repeatBtn").addEventListener("click", () => {
-      if (activeList.length > 0) {
-        speakKorean(activeList[currentIndex].korean);
-      }
+      if (activeList.length > 0) speakKorean(activeList[currentIndex].korean);
     });
 
     document.getElementById("checkBtn").addEventListener("click", () => {
@@ -874,25 +956,13 @@
     document.getElementById("addWordBtn").addEventListener("click", async () => {
       const kor = document.getElementById("customKorean").value.trim();
       let eng = document.getElementById("customEnglish").value.trim();
-      
-      if (!kor) {
-        alert("Please enter a Korean word.");
-        return;
-      }
-
-      if (!eng) {
-        eng = await translateKoreanToEnglish(kor);
-      }
+      if (!kor) { alert("Please enter a Korean word."); return; }
+      if (!eng) eng = await translateKoreanToEnglish(kor);
 
       const todayFormatted = getDisplayDateString();
-
       const existingCustom = decks.custom.find(item => item.korean === kor);
       if (existingCustom) {
-        const updateMeaning = confirm(
-          `⚠️ Duplicate Word Detected!\n\n"${kor}" is already saved with the meaning:\n👉 "${existingCustom.english}"\n\nWould you like to append this new translation ("${eng}") to the existing word?`
-        );
-
-        if (updateMeaning) {
+        if (confirm(`⚠️ Duplication detected! Append meaning "${eng}"?`)) {
           existingCustom.english += `, ${eng}`;
           saveWordsToStorage();
           renderCustomList();
@@ -902,11 +972,6 @@
           document.getElementById("customEnglish").value = "";
         }
         return;
-      }
-
-      const existingMemorized = decks.memorized.find(item => item.korean === kor);
-      if (existingMemorized) {
-        alert(`⚠️ Note: "${kor}" is currently saved in your Memorized Deck as "${existingMemorized.english}".`);
       }
 
       decks.custom.unshift({ 
@@ -920,15 +985,13 @@
       renderCustomList();
       renderDateHistoryTab();
 
-      if (currentDeckKey === 'custom') {
-        setDeck('custom');
-      }
+      if (currentDeckKey === 'custom') setDeck('custom');
 
       document.getElementById("customKorean").value = "";
       document.getElementById("customEnglish").value = "";
     });
 
-    // Init App
+    // App Initialization
     loadSavedWords();
     loadStreakData();
     renderCustomList();
