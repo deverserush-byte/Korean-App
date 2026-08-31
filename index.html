@@ -8,6 +8,12 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     body { background-color: #f8f9fa; color: #333; display: flex; justify-content: center; padding: 16px; }
     .app-container { width: 100%; max-width: 480px; background: #ffffff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; gap: 16px; }
+    
+    /* Top Navigation Tabs */
+    .tab-navigation { display: flex; background: #f0f4ff; padding: 4px; border-radius: 14px; gap: 4px; }
+    .tab-btn { flex: 1; border: none; background: transparent; padding: 10px 0; font-size: 12px; font-weight: 700; color: #666; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; }
+    .tab-btn.active { background: #4c84ff; color: #ffffff; box-shadow: 0 2px 8px rgba(76, 132, 255, 0.3); }
+
     .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
     .header-title-container { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .header-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; color: #666; text-transform: uppercase; }
@@ -70,130 +76,162 @@
     .delete-btn { background: #ffeded; color: #e53e3e; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
     .restore-btn { background: #e6fffa; color: #0d9488; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
     .empty-list-text { font-size: 11px; color: #aaa; text-align: center; padding: 12px; }
+
+    /* Date Log Tab Styles */
+    .tab-content { display: flex; flex-direction: column; gap: 16px; }
+    .date-group-card { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; }
+    .date-group-header { background: #f8fafc; padding: 12px 14px; font-size: 12px; font-weight: 700; color: #334155; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+    .date-group-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .history-word-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8fafc; border-radius: 8px; font-size: 12px; }
+    .history-word-kor { font-weight: 700; color: #1e293b; }
+    .history-word-eng { font-size: 11px; color: #64748b; }
+    .history-speak-btn { background: #e0e7ff; color: #4338ca; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
   <div class="app-container">
-    <div class="header">
-      <div class="header-title-container">
-        <span class="header-title">Korean Audio Practice</span>
-        <!-- Streak & Restoration Display Badge -->
-        <div class="streak-badge" id="streakBadge">🔥 0 Days (🛡️ 2/2)</div>
-      </div>
-      <button class="pause-btn" id="togglePlayBtn">❚❚</button>
+    <!-- Top Navigation Tabs -->
+    <div class="tab-navigation">
+      <button class="tab-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">🎧 Dictation Practice</button>
+      <button class="tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">📅 Daily Vocabulary Log</button>
     </div>
 
-    <!-- Cards Row -->
-    <div class="cards-row">
-      <div class="card flashcard">
-        <div class="flashcard-dot"></div>
-        <div class="flashcard-main" id="displayWord">????</div>
-        <div class="flashcard-sub" id="displayHint">[ Listen to audio ]</div>
-        <div class="flashcard-action">Write in your book...</div>
-      </div>
-      <div class="card status-card">
-        <div class="status-badge">BOOK DICTATION ACTIVE</div>
-        <div class="waveform">
-          <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    <!-- TAB 1: PRACTICE & DICTATION -->
+    <div id="practiceTab" class="tab-content">
+      <div class="header">
+        <div class="header-title-container">
+          <span class="header-title">Korean Audio Practice</span>
+          <!-- Streak & Restoration Display Badge -->
+          <div class="streak-badge" id="streakBadge">🔥 0 Days (🛡️ 2/2)</div>
         </div>
-        <div style="font-size: 10px; color: #888; margin-top: 6px;">Auto-advancing target stream...</div>
+        <button class="pause-btn" id="togglePlayBtn">❚❚</button>
       </div>
-    </div>
 
-    <div class="card-meta">
-      <span id="cardIndexLabel">Card index: 1 / 5</span>
-      <span id="intervalLabel">Interval: 5s</span>
-    </div>
-
-    <hr style="border: 0; border-top: 1px solid #f0f0f0;">
-
-    <!-- Stats Grid -->
-    <div class="stats-grid">
-      <div>
-        <div class="stat-label">Words Today</div>
-        <div class="stat-value" id="dailyGoalCount">0 / 10</div>
-      </div>
-      <div>
-        <div class="stat-label">Current Deck</div>
-        <div class="stat-value" id="deckLabel">Essential</div>
-      </div>
-      <div>
-        <div class="stat-label">Practice Flow</div>
-        <div class="stat-value" id="flowLabel">0% Done</div>
-      </div>
-    </div>
-
-    <!-- Vocabulary Deck Selection -->
-    <div class="control-group">
-      <div class="control-label">Select Vocabulary Deck</div>
-      <div class="segmented-control" id="deckSelector">
-        <button class="segmented-btn active" data-deck="essential">Essential</button>
-        <button class="segmented-btn" data-deck="verbs">Verbs</button>
-        <button class="segmented-btn" data-deck="travel">Travel</button>
-        <button class="segmented-btn" data-deck="custom" id="customDeckBtn">Custom (0)</button>
-        <button class="segmented-btn" data-deck="memorized" id="memorizedDeckBtn">🧠 Memorized (0)</button>
-      </div>
-    </div>
-
-    <!-- Playback Audio Order -->
-    <div class="control-group">
-      <div class="control-label">Playback Audio Order</div>
-      <div class="segmented-control" id="orderSelector">
-        <button class="segmented-btn active" data-order="random">Random Shuffle</button>
-        <button class="segmented-btn" data-order="sequential">Sequential</button>
-      </div>
-    </div>
-
-    <!-- Dictation Delay -->
-    <div class="delay-box">
-      <div class="control-label" style="font-size: 11px;">Dictation Writing Delay</div>
-      <div class="slider-container">
-        <input type="range" id="delaySlider" min="2" max="15" value="5">
-        <span class="delay-val" id="delayValText">5 seconds</span>
-      </div>
-    </div>
-
-    <!-- Navigation & Playback Controls -->
-    <div class="btn-row">
-      <button class="btn btn-light" id="prevBtn">│◄ Prev</button>
-      <button class="btn btn-light" id="nextBtn">Next ►│</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="repeatBtn">🔊 Repeat Audio</button>
-      <button class="btn btn-light" id="checkBtn">Check Answer</button>
-      <button class="btn btn-warning" id="memorizeCurrentBtn">🧠 Memorized</button>
-    </div>
-
-    <!-- Add Custom Vocabulary & Saved List -->
-    <div class="add-word-card">
-      <div class="add-word-title">ADD CUSTOM VOCABULARY WORD</div>
-      <div class="input-field-container">
-        <input type="text" class="input-field" id="customKorean" placeholder="Korean Word (e.g. 학교)">
-        <button class="btn-auto-translate" id="autoTranslateBtn">✨ Auto Translate</button>
-      </div>
-      <input type="text" class="input-field" id="customEnglish" placeholder="English Translation (e.g. School)">
-      <button class="btn-add" id="addWordBtn">+ Add Word to Custom Deck List</button>
-
-      <!-- Custom Folder Dropdown -->
-      <div class="custom-list-container">
-        <button class="folder-toggle-btn" id="folderToggleBtn">
-          <span id="folderTitleText">📁 Saved Custom Words (0)</span>
-          <span id="folderArrow">▼</span>
-        </button>
-        <div class="custom-word-list hidden" id="customWordListContainer">
-          <div class="empty-list-text">No custom words added yet.</div>
+      <!-- Cards Row -->
+      <div class="cards-row">
+        <div class="card flashcard">
+          <div class="flashcard-dot"></div>
+          <div class="flashcard-main" id="displayWord">????</div>
+          <div class="flashcard-sub" id="displayHint">[ Listen to audio ]</div>
+          <div class="flashcard-action">Write in your book...</div>
         </div>
-
-        <!-- Memorized Folder Dropdown -->
-        <button class="folder-toggle-btn memorized-toggle-btn" id="memorizedToggleBtn">
-          <span id="memorizedTitleText">🧠 Memorized Words (0)</span>
-          <span id="memorizedArrow">▼</span>
-        </button>
-        <div class="custom-word-list hidden" id="memorizedWordListContainer">
-          <div class="empty-list-text">No memorized words saved yet.</div>
+        <div class="card status-card">
+          <div class="status-badge">BOOK DICTATION ACTIVE</div>
+          <div class="waveform">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          </div>
+          <div style="font-size: 10px; color: #888; margin-top: 6px;">Auto-advancing target stream...</div>
         </div>
+      </div>
+
+      <div class="card-meta">
+        <span id="cardIndexLabel">Card index: 1 / 5</span>
+        <span id="intervalLabel">Interval: 5s</span>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #f0f0f0;">
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div>
+          <div class="stat-label">Words Today</div>
+          <div class="stat-value" id="dailyGoalCount">0 / 10</div>
+        </div>
+        <div>
+          <div class="stat-label">Current Deck</div>
+          <div class="stat-value" id="deckLabel">Essential</div>
+        </div>
+        <div>
+          <div class="stat-label">Practice Flow</div>
+          <div class="stat-value" id="flowLabel">0% Done</div>
+        </div>
+      </div>
+
+      <!-- Vocabulary Deck Selection -->
+      <div class="control-group">
+        <div class="control-label">Select Vocabulary Deck</div>
+        <div class="segmented-control" id="deckSelector">
+          <button class="segmented-btn active" data-deck="essential">Essential</button>
+          <button class="segmented-btn" data-deck="verbs">Verbs</button>
+          <button class="segmented-btn" data-deck="travel">Travel</button>
+          <button class="segmented-btn" data-deck="custom" id="customDeckBtn">Custom (0)</button>
+          <button class="segmented-btn" data-deck="memorized" id="memorizedDeckBtn">🧠 Memorized (0)</button>
+        </div>
+      </div>
+
+      <!-- Playback Audio Order -->
+      <div class="control-group">
+        <div class="control-label">Playback Audio Order</div>
+        <div class="segmented-control" id="orderSelector">
+          <button class="segmented-btn active" data-order="random">Random Shuffle</button>
+          <button class="segmented-btn" data-order="sequential">Sequential</button>
+        </div>
+      </div>
+
+      <!-- Dictation Delay -->
+      <div class="delay-box">
+        <div class="control-label" style="font-size: 11px;">Dictation Writing Delay</div>
+        <div class="slider-container">
+          <input type="range" id="delaySlider" min="2" max="15" value="5">
+          <span class="delay-val" id="delayValText">5 seconds</span>
+        </div>
+      </div>
+
+      <!-- Navigation & Playback Controls -->
+      <div class="btn-row">
+        <button class="btn btn-light" id="prevBtn">│◄ Prev</button>
+        <button class="btn btn-light" id="nextBtn">Next ►│</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="repeatBtn">🔊 Repeat Audio</button>
+        <button class="btn btn-light" id="checkBtn">Check Answer</button>
+        <button class="btn btn-warning" id="memorizeCurrentBtn">🧠 Memorized</button>
+      </div>
+
+      <!-- Add Custom Vocabulary & Saved List -->
+      <div class="add-word-card">
+        <div class="add-word-title">ADD CUSTOM VOCABULARY WORD</div>
+        <div class="input-field-container">
+          <input type="text" class="input-field" id="customKorean" placeholder="Korean Word (e.g. 학교)">
+          <button class="btn-auto-translate" id="autoTranslateBtn">✨ Auto Translate</button>
+        </div>
+        <input type="text" class="input-field" id="customEnglish" placeholder="English Translation (e.g. School)">
+        <button class="btn-add" id="addWordBtn">+ Add Word to Custom Deck List</button>
+
+        <!-- Custom Folder Dropdown -->
+        <div class="custom-list-container">
+          <button class="folder-toggle-btn" id="folderToggleBtn">
+            <span id="folderTitleText">📁 Saved Custom Words (0)</span>
+            <span id="folderArrow">▼</span>
+          </button>
+          <div class="custom-word-list hidden" id="customWordListContainer">
+            <div class="empty-list-text">No custom words added yet.</div>
+          </div>
+
+          <!-- Memorized Folder Dropdown -->
+          <button class="folder-toggle-btn memorized-toggle-btn" id="memorizedToggleBtn">
+            <span id="memorizedTitleText">🧠 Memorized Words (0)</span>
+            <span id="memorizedArrow">▼</span>
+          </button>
+          <div class="custom-word-list hidden" id="memorizedWordListContainer">
+            <div class="empty-list-text">No memorized words saved yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: DAILY VOCABULARY LOG HISTORY -->
+    <div id="historyTab" class="tab-content hidden">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <h3 style="font-size: 15px; font-weight: 700; color: #1e293b;">📅 Vocabulary Added By Date</h3>
+        <p style="font-size: 11px; color: #64748b;">Click any date header to expand or collapse words added on that day.</p>
+      </div>
+
+      <div id="dateHistoryContainer" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Dynamic Date Accordions Will Be Rendered Here -->
       </div>
     </div>
   </div>
@@ -231,7 +269,7 @@
     let currentIndex = 0;
     let spokenCountToday = 0;
     let currentStreak = 0;
-    let availableRestorations = 2; // Default 2 restorations per week
+    let availableRestorations = 2;
     let lastWeekNumber = 0;
     let goalReachedToday = false;
     let isPlaying = true;
@@ -241,6 +279,9 @@
     let answerRevealed = false;
     let isFolderOpen = false;
     let isMemorizedFolderOpen = false;
+
+    // Track collapse state for history dates
+    let dateCollapseState = {};
 
     // UI Elements
     const displayWord = document.getElementById("displayWord");
@@ -264,15 +305,53 @@
     const memorizedTitleText = document.getElementById("memorizedTitleText");
     const memorizedArrow = document.getElementById("memorizedArrow");
 
+    // Tab Switching Logic
+    window.switchTab = function(tabName) {
+      const practiceTab = document.getElementById("practiceTab");
+      const historyTab = document.getElementById("historyTab");
+      const tabPracticeBtn = document.getElementById("tabPracticeBtn");
+      const tabHistoryBtn = document.getElementById("tabHistoryBtn");
+
+      if (tabName === 'practice') {
+        practiceTab.classList.remove("hidden");
+        historyTab.classList.add("hidden");
+        tabPracticeBtn.classList.add("active");
+        tabHistoryBtn.classList.remove("active");
+      } else {
+        practiceTab.classList.add("hidden");
+        historyTab.classList.remove("hidden");
+        tabPracticeBtn.classList.remove("active");
+        tabHistoryBtn.classList.add("active");
+        renderDateHistoryTab(); // Refresh history view on open
+      }
+    };
+
+    // Date formatting helper
+    function getDisplayDateString(dateObj = new Date()) {
+      return dateObj.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
     // Load saved custom & memorized words
     function loadSavedWords() {
       const storedCustom = localStorage.getItem("korean_custom_words");
       if (storedCustom) {
-        try { decks.custom = JSON.parse(storedCustom); } catch (e) { decks.custom = []; }
+        try { 
+          decks.custom = JSON.parse(storedCustom); 
+          // Ensure all words have a date field
+          decks.custom.forEach(item => {
+            if (!item.addedDate) item.addedDate = getDisplayDateString();
+          });
+        } catch (e) { decks.custom = []; }
       }
+
       const storedMemorized = localStorage.getItem("korean_memorized_words");
       if (storedMemorized) {
-        try { decks.memorized = JSON.parse(storedMemorized); } catch (e) { decks.memorized = []; }
+        try { 
+          decks.memorized = JSON.parse(storedMemorized);
+          decks.memorized.forEach(item => {
+            if (!item.addedDate) item.addedDate = getDisplayDateString();
+          });
+        } catch (e) { decks.memorized = []; }
       }
     }
 
@@ -281,7 +360,6 @@
       localStorage.setItem("korean_memorized_words", JSON.stringify(decks.memorized));
     }
 
-    // Helper functions for Date & Week calculations
     function getTodayDate() {
       const today = new Date();
       return new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -304,7 +382,6 @@
       let savedRestorations = parseInt(localStorage.getItem("korean_restorations") || "2");
       let savedWeek = parseInt(localStorage.getItem("korean_last_week") || "0");
 
-      // Weekly Reset logic: Reset restorations to 2 if a new week started
       if (savedWeek !== currentWeek) {
         savedRestorations = 2;
         lastWeekNumber = currentWeek;
@@ -319,26 +396,21 @@
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays === 0) {
-          // Same day
           spokenCountToday = savedCount;
           currentStreak = savedStreak;
           goalReachedToday = savedGoal;
         } else if (diffDays === 1) {
-          // Next day consecutively
           spokenCountToday = 0;
           currentStreak = savedStreak;
           goalReachedToday = false;
         } else {
-          // Missed 1 or more days
           const missedDays = diffDays - 1;
 
           if (availableRestorations >= missedDays && savedStreak > 0) {
-            // Auto Restoration active!
             availableRestorations -= missedDays;
-            currentStreak = savedStreak; // Streak protected!
+            currentStreak = savedStreak;
             alert(`🛡️ Streak Protection Activated!\nYou missed ${missedDays} day(s), but your streak was saved! (${availableRestorations}/2 restorations left for this week).`);
           } else {
-            // Restorations exhausted or streak was 0
             currentStreak = 0;
             alert(`💔 Streak Lost!\nYou missed ${missedDays} day(s) and didn't have enough restorations left. Start fresh today!`);
           }
@@ -346,7 +418,6 @@
           goalReachedToday = false;
         }
       } else {
-        // First time user
         spokenCountToday = 0;
         currentStreak = 0;
         goalReachedToday = false;
@@ -462,6 +533,66 @@
       }
     }
 
+    // TAB 2: Render Vocabulary History Grouped by Date
+    function renderDateHistoryTab() {
+      const container = document.getElementById("dateHistoryContainer");
+      const allWords = [...decks.custom, ...decks.memorized];
+
+      if (allWords.length === 0) {
+        container.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:30px; font-size:12px;">No custom words added yet. Add words in the Dictation tab to see them logged here!</div>`;
+        return;
+      }
+
+      // Group words by Date
+      const groupedByDate = {};
+      allWords.forEach(word => {
+        const dateKey = word.addedDate || getDisplayDateString();
+        if (!groupedByDate[dateKey]) {
+          groupedByDate[dateKey] = [];
+        }
+        groupedByDate[dateKey].push(word);
+      });
+
+      // Default expand today's date if not set
+      const todayStr = getDisplayDateString();
+      if (dateCollapseState[todayStr] === undefined) {
+        dateCollapseState[todayStr] = true; // Open today by default
+      }
+
+      let html = "";
+      Object.keys(groupedByDate).forEach(date => {
+        const isExpanded = !!dateCollapseState[date];
+        const wordsInDate = groupedByDate[date];
+
+        html += `
+          <div class="date-group-card">
+            <div class="date-group-header" onclick="toggleDateGroup('${date}')">
+              <span>📅 ${date} (${wordsInDate.length} word${wordsInDate.length === 1 ? '' : 's'})</span>
+              <span>${isExpanded ? '▲' : '▼'}</span>
+            </div>
+            <div class="date-group-body ${isExpanded ? '' : 'hidden'}">
+              ${wordsInDate.map(item => `
+                <div class="history-word-row">
+                  <div>
+                    <span class="history-word-kor">${item.korean}</span>
+                    <span class="history-word-eng">- ${item.english}</span>
+                  </div>
+                  <button class="history-speak-btn" onclick="speakKorean('${item.korean}')">🔊</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    window.toggleDateGroup = function(date) {
+      dateCollapseState[date] = !dateCollapseState[date];
+      renderDateHistoryTab();
+    };
+
     window.editCustomWord = function(index) {
       const item = decks.custom[index];
       if (!item) return;
@@ -481,6 +612,7 @@
       }
 
       decks.custom[index] = {
+        ...item,
         korean: trimmedKor,
         english: trimmedEng || "Translation unavailable"
       };
@@ -706,6 +838,8 @@
         eng = await translateKoreanToEnglish(kor);
       }
 
+      const todayFormatted = getDisplayDateString();
+
       // Check duplicate in Custom Deck
       const existingCustom = decks.custom.find(item => item.korean === kor);
 
@@ -731,7 +865,13 @@
         alert(`⚠️ Note: "${kor}" is currently saved in your Memorized Deck as "${existingMemorized.english}".`);
       }
 
-      decks.custom.push({ korean: kor, english: eng || "Translation unavailable" });
+      // Add new word with date timestamp
+      decks.custom.push({ 
+        korean: kor, 
+        english: eng || "Translation unavailable",
+        addedDate: todayFormatted 
+      });
+
       saveWordsToStorage();
       renderCustomList();
 
