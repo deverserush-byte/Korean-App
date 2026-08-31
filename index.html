@@ -1,3 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Korean Vocabulary Dictation App</title>
+
+  <!-- Firebase Compatibility SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #6366f1;
+      --accent-hover: #4f46e5;
+      --text-color: #f8fafc;
+      --subtext-color: #94a3b8;
+      --border-color: #334155;
+      --success-color: #22c55e;
+      --danger-color: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Auth Header */
+    .auth-header {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .auth-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .auth-user {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .sync-status {
+      font-size: 11px;
+      color: var(--subtext-color);
+    }
+
+    .auth-btn {
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .auth-btn.logout {
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--subtext-color);
+    }
+
+    /* Tabs Bar */
+    .nav-tabs {
+      display: flex;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--subtext-color);
+      padding: 8px 0;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .nav-tab-btn.active {
+      background-color: var(--accent-color);
+      color: white;
+    }
+
+    /* Card Box */
+    .card-display {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      min-height: 180px;
+      justify-content: center;
+      position: relative;
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 11px;
+      color: var(--subtext-color);
+      margin-bottom: 8px;
+    }
+
+    .word-main {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+
+    .word-hint {
+      font-size: 16px;
+      color: var(--subtext-color);
+      min-height: 24px;
+    }
+
+    /* Controls */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ctrl-btn:active {
+      background-color: var(--border-color);
+    }
+
+    .ctrl-btn.primary {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+      grid-column: span 2;
+    }
+
+    /* Segmented Controllers */
+    .segmented-control {
+      display: flex;
+      background-color: var(--card-bg);
+      border-radius: 10px;
+      padding: 4px;
+      border: 1px solid var(--border-color);
+      gap: 4px;
+      overflow-x: auto;
+    }
+
+    .segmented-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--subtext-color);
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .segmented-btn.active {
+      background-color: var(--border-color);
+      color: var(--text-color);
+    }
+
+    /* Settings & Input Box */
+    .panel-box {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .slider-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--subtext-color);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-color);
+      margin-top: 6px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .action-btn {
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Accordion / Folders */
+    .folder-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .word-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .custom-word-item, .history-word-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-color);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      border: 1px solid var(--border-color);
+    }
+
+    .custom-word-kor, .history-word-kor { font-weight: 600; }
+    .custom-word-eng, .history-word-eng { color: var(--subtext-color); font-size: 12px; margin-left: 6px; }
+
+    .action-btn-group { display: flex; gap: 4px; }
+    .edit-btn, .delete-btn, .restore-btn, .history-speak-btn, .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--subtext-color);
+      font-size: 11px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .edit-btn:hover { color: var(--accent-color); }
+    .delete-btn:hover { color: var(--danger-color); }
+    .restore-btn:hover { color: var(--success-color); }
+
+    .copy-btn {
+      background: var(--border-color);
+      color: var(--text-color);
+      border-radius: 4px;
+      padding: 4px 8px;
+    }
+
+    .date-group-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .date-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .date-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .date-group-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hidden { display: none !important; }
+    .empty-list-text { font-size: 12px; color: var(--subtext-color); text-align: center; padding: 12px; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Auth Bar -->
+    <div class="auth-header">
+      <div class="auth-info">
+        <span class="auth-user" id="authUserInfo">☁️ Guest Mode (Local Only)</span>
+        <span class="sync-status" id="syncStatus">Sign in to sync across iOS & Android</span>
+      </div>
+      <button class="auth-btn" id="authBtn" onclick="handleAuthAction()">Sign In</button>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab-btn active" id="tabPracticeBtn" onclick="switchTab('practice')">Dictation Practice</button>
+      <button class="nav-tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">History & Dates</button>
+    </div>
+
+    <!-- PRACTICE TAB CONTENT -->
+    <div id="practiceTab">
+      
+      <!-- Card Display -->
+      <div class="card-display">
+        <div class="card-meta">
+          <span id="cardIndexLabel">Card index: 0 / 0</span>
+          <span id="streakBadge">🔥 0 Days (🛡️ 2/2)</span>
+          <span id="flowLabel">0% Done</span>
+        </div>
+        <div class="word-main" id="displayWord">????</div>
+        <div class="word-hint" id="displayHint">[ Listen to audio ]</div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-grid" style="margin-top: 12px;">
+        <button class="ctrl-btn" id="prevBtn">◀ Prev</button>
+        <button class="ctrl-btn" id="togglePlayBtn">❚❚</button>
+        <button class="ctrl-btn" id="repeatBtn">🔊 Repeat</button>
+        <button class="ctrl-btn" id="nextBtn">Next ▶</button>
+        <button class="ctrl-btn primary" id="checkBtn">👁️ Show / Hide Answer</button>
+        <button class="ctrl-btn primary" id="memorizeCurrentBtn" style="background-color: var(--success-color); border-color: var(--success-color);">🧠 Mark Memorized</button>
+      </div>
+
+      <!-- Settings & Mode Selection -->
+      <div class="panel-box" style="margin-top: 12px;">
+        <div>
+          <span style="font-size: 11px; color: var(--subtext-color); font-weight: 600;">SELECT DECK</span>
+          <div class="segmented-control" id="deckSelector" style="margin-top: 4px;">
+            <button class="segmented-btn active" data-deck="essential">Essential</button>
+            <button class="segmented-btn" data-deck="verbs">Verbs</button>
+            <button class="segmented-btn" data-deck="travel">Travel</button>
+            <button class="segmented-btn" id="customDeckBtn" data-deck="custom">Custom (0)</button>
+            <button class="segmented-btn" id="memorizedDeckBtn" data-deck="memorized">🧠 Memorized (0)</button>
+          </div>
+        </div>
+
+        <div>
+          <span style="font-size: 11px; color: var(--subtext-color); font-weight: 600;">ORDER MODE</span>
+          <div class="segmented-control" id="orderSelector" style="margin-top: 4px;">
+            <button class="segmented-btn active" data-order="random">Random Loop</button>
+            <button class="segmented-btn" data-order="sequential">Sequential</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="slider-row">
+            <span>Audio Interval Delay</span>
+            <span id="delayValText">5 seconds</span>
+          </div>
+          <input type="range" id="delaySlider" min="2" max="15" value="5" />
+        </div>
+      </div>
+
+      <!-- Add Custom Word Section -->
+      <div class="panel-box" style="margin-top: 12px;">
+        <span style="font-size: 12px; font-weight: 600;">➕ Add Custom Word</span>
+        <div class="input-group">
+          <input type="text" id="customKorean" placeholder="Korean (e.g. 사과)" />
+          <button class="action-btn" id="autoTranslateBtn" style="background: var(--border-color);">✨ Auto Translate</button>
+        </div>
+        <div class="input-group">
+          <input type="text" id="customEnglish" placeholder="English (e.g. Apple)" />
+          <button class="action-btn" id="addWordBtn">Save Word</button>
+        </div>
+      </div>
+
+      <!-- Custom Saved Accordion -->
+      <div class="panel-box" style="margin-top: 12px;">
+        <div class="folder-header" id="folderToggleBtn">
+          <span id="folderTitleText">📁 Saved Custom Words (0)</span>
+          <span id="folderArrow">▼</span>
+        </div>
+        <div class="word-list hidden" id="customWordListContainer"></div>
+      </div>
+
+      <!-- Memorized Saved Accordion -->
+      <div class="panel-box" style="margin-top: 12px;">
+        <div class="folder-header" id="memorizedToggleBtn">
+          <span id="memorizedTitleText">🧠 Memorized Words (0)</span>
+          <span id="memorizedArrow">▼</span>
+        </div>
+        <div class="word-list hidden" id="memorizedWordListContainer"></div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="panel-box" style="margin-top: 12px; flex-direction: row; justify-content: space-between; align-items: center;">
+        <span style="font-size: 12px; color: var(--subtext-color);">Daily Goal Progress:</span>
+        <span id="dailyGoalCount" style="font-size: 13px; font-weight: 600;">0 / 10</span>
+        <span id="intervalLabel" style="font-size: 11px; color: var(--subtext-color);">Interval: 5s</span>
+      </div>
+
+    </div>
+
+    <!-- HISTORY TAB CONTENT -->
+    <div id="historyTab" class="hidden">
+      <div id="dateHistoryContainer"></div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPT IMPLEMENTATION -->
   <script>
     // --- FIREBASE CONFIGURATION ---
     const firebaseConfig = {
@@ -595,7 +1072,6 @@
 
     function setDeck(deckKey) {
       currentDeckKey = deckKey;
-      deckLabel.innerText = deckKey.charAt(0).toUpperCase() + deckKey.slice(1);
 
       if (orderMode === "random") activeList = shuffleArray(decks[deckKey]);
       else activeList = [...decks[deckKey]];
@@ -759,3 +1235,5 @@
     updateCardDisplay();
     resetTimer();
   </script>
+</body>
+</html>
