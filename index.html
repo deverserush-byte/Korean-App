@@ -75,12 +75,15 @@
     .edit-btn { background: #edf2f7; color: #4a5568; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
     .delete-btn { background: #ffeded; color: #e53e3e; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
     .restore-btn { background: #e6fffa; color: #0d9488; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
+    .copy-btn { background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: 6px; padding: 3px 8px; font-size: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #e0e7ff; }
     .empty-list-text { font-size: 11px; color: #aaa; text-align: center; padding: 12px; }
 
     /* Date Log Tab Styles */
     .tab-content { display: flex; flex-direction: column; gap: 16px; }
     .date-group-card { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; }
-    .date-group-header { background: #f8fafc; padding: 12px 14px; font-size: 12px; font-weight: 700; color: #334155; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+    .date-group-header { background: #f8fafc; padding: 10px 14px; font-size: 12px; font-weight: 700; color: #334155; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; }
+    .date-title-group { display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; }
     .date-group-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
     .history-word-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8fafc; border-radius: 8px; font-size: 12px; }
     .history-word-kor { font-weight: 700; color: #1e293b; }
@@ -226,7 +229,7 @@
     <div id="historyTab" class="tab-content hidden">
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <h3 style="font-size: 15px; font-weight: 700; color: #1e293b;">📅 Vocabulary Added By Date</h3>
-        <p style="font-size: 11px; color: #64748b;">Click headers to expand/collapse. Words can be edited directly here.</p>
+        <p style="font-size: 11px; color: #64748b;">Click headers to collapse/expand. Use "📋 Copy Words" to grab all words for any date.</p>
       </div>
 
       <div id="dateHistoryContainer" style="display: flex; flex-direction: column; gap: 10px;">
@@ -556,9 +559,12 @@
 
         html += `
           <div class="date-group-card">
-            <div class="date-group-header" data-action="toggle-date" data-date="${date}">
-              <span>📅 ${date} (${wordsInDate.length} word${wordsInDate.length === 1 ? '' : 's'})</span>
-              <span>${isExpanded ? '▲' : '▼'}</span>
+            <div class="date-group-header">
+              <div class="date-title-group" data-action="toggle-date" data-date="${date}">
+                <span>📅 ${date} (${wordsInDate.length} word${wordsInDate.length === 1 ? '' : 's'})</span>
+                <span>${isExpanded ? '▲' : '▼'}</span>
+              </div>
+              <button class="copy-btn" data-action="copy-date" data-date="${date}">📋 Copy Words</button>
             </div>
             <div class="date-group-body ${isExpanded ? '' : 'hidden'}">
               ${wordsInDate.map(item => `
@@ -581,7 +587,6 @@
       container.innerHTML = html;
     }
 
-    // Handlers
     function editCustomWordById(id) {
       let targetDeck = decks.custom;
       let item = targetDeck.find(w => String(w.id) === String(id));
@@ -644,7 +649,26 @@
       }
     }
 
-    // Robust Global Event Listener for Dynamic Buttons
+    function copyWordsByDate(date, btnElement) {
+      const allWords = [...decks.custom, ...decks.memorized];
+      const wordsForDate = allWords.filter(w => (w.addedDate || getDisplayDateString()) === date);
+
+      if (wordsForDate.length === 0) return;
+
+      const textToCopy = wordsForDate.map(w => `${w.korean} - ${w.english}`).join('\n');
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const originalText = btnElement.innerText;
+        btnElement.innerText = "✅ Copied!";
+        setTimeout(() => {
+          btnElement.innerText = originalText;
+        }, 1500);
+      }).catch(err => {
+        alert("Could not copy words: " + err);
+      });
+    }
+
+    // Global Event Listener
     document.addEventListener("click", function (e) {
       const btn = e.target.closest("[data-action]");
       if (!btn) return;
@@ -665,6 +689,9 @@
         const date = btn.getAttribute("data-date");
         dateCollapseState[date] = !dateCollapseState[date];
         renderDateHistoryTab();
+      } else if (action === "copy-date") {
+        const date = btn.getAttribute("data-date");
+        copyWordsByDate(date, btn);
       }
     });
 
