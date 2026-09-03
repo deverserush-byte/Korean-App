@@ -12,14 +12,16 @@
 
   <style>
     :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
+      --bg-color: #0b0f19;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
       --accent-color: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.35);
       --accent-hover: #4f46e5;
       --text-color: #f8fafc;
       --subtext-color: #94a3b8;
-      --border-color: #334155;
-      --success-color: #22c55e;
+      --success-color: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.3);
       --danger-color: #ef4444;
     }
 
@@ -27,16 +29,16 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background-color: var(--bg-color);
+      background: radial-gradient(circle at top, #1e1b4b 0%, #0b0f19 60%);
       color: var(--text-color);
       display: flex;
       justify-content: center;
       min-height: 100vh;
-      padding: 16px;
+      padding: 20px 16px;
     }
 
     .app-container {
@@ -50,12 +52,14 @@
     /* Auth Header */
     .auth-header {
       background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 12px 16px;
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
 
     .auth-info {
@@ -64,7 +68,7 @@
     }
 
     .auth-user {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 14px;
     }
 
@@ -74,29 +78,33 @@
     }
 
     .auth-btn {
-      background-color: var(--accent-color);
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
       color: white;
       border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 12px;
       font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 10px var(--accent-glow);
     }
 
     .auth-btn.logout {
-      background-color: transparent;
-      border: 1px solid var(--border-color);
+      background: transparent;
+      border: 1px solid var(--card-border);
       color: var(--subtext-color);
+      box-shadow: none;
     }
 
     /* Tabs Bar */
     .nav-tabs {
       display: flex;
-      background-color: var(--card-bg);
-      border-radius: 12px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border-radius: 14px;
       padding: 4px;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--card-border);
     }
 
     .nav-tab-btn {
@@ -104,32 +112,36 @@
       background: transparent;
       border: none;
       color: var(--subtext-color);
-      padding: 8px 0;
+      padding: 10px 0;
       font-size: 13px;
       font-weight: 600;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
 
     .nav-tab-btn.active {
-      background-color: var(--accent-color);
+      background: var(--accent-color);
       color: white;
+      box-shadow: 0 2px 12px var(--accent-glow);
     }
 
     /* Card Box */
     .card-display {
-      background: var(--card-bg);
-      border-radius: 16px;
-      border: 1px solid var(--border-color);
-      padding: 24px;
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      padding: 28px 20px;
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      min-height: 180px;
+      gap: 14px;
+      min-height: 200px;
       justify-content: center;
       position: relative;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
     .card-meta {
@@ -138,59 +150,72 @@
       width: 100%;
       font-size: 11px;
       color: var(--subtext-color);
-      margin-bottom: 8px;
+      font-weight: 500;
     }
 
     .word-main {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--text-color);
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .word-hint {
-      font-size: 16px;
+      font-size: 15px;
       color: var(--subtext-color);
       min-height: 24px;
+      font-weight: 500;
     }
 
     /* Controls */
     .controls-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      gap: 10px;
     }
 
     .ctrl-btn {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       color: var(--text-color);
       padding: 12px;
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: 12px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s ease;
     }
 
     .ctrl-btn:active {
-      background-color: var(--border-color);
+      transform: scale(0.96);
     }
 
     .ctrl-btn.primary {
-      background-color: var(--accent-color);
-      border-color: var(--accent-color);
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border: none;
       grid-column: span 2;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .ctrl-btn.success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: none;
+      grid-column: span 2;
+      box-shadow: 0 4px 14px var(--success-glow);
     }
 
     /* Segmented Controllers */
     .segmented-control {
       display: flex;
-      background-color: var(--card-bg);
-      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 12px;
       padding: 4px;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--card-border);
       gap: 4px;
       overflow-x: auto;
     }
@@ -200,28 +225,32 @@
       background: transparent;
       border: none;
       color: var(--subtext-color);
-      padding: 8px;
+      padding: 8px 10px;
       font-size: 12px;
-      font-weight: 500;
-      border-radius: 6px;
+      font-weight: 600;
+      border-radius: 8px;
       cursor: pointer;
       white-space: nowrap;
+      transition: all 0.2s ease;
     }
 
     .segmented-btn.active {
-      background-color: var(--border-color);
+      background: var(--card-bg);
       color: var(--text-color);
+      border: 1px solid var(--card-border);
     }
 
     /* Settings & Input Box */
     .panel-box {
-      background-color: var(--card-bg);
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border-radius: 18px;
+      padding: 18px;
+      border: 1px solid var(--card-border);
       display: flex;
       flex-direction: column;
       gap: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     }
 
     .slider-row {
@@ -230,6 +259,7 @@
       align-items: center;
       font-size: 12px;
       color: var(--subtext-color);
+      font-weight: 500;
     }
 
     input[type="range"] {
@@ -245,26 +275,32 @@
 
     input[type="text"] {
       flex: 1;
-      background: var(--bg-color);
-      border: 1px solid var(--border-color);
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
       color: var(--text-color);
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
       font-size: 13px;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent-color);
     }
 
     .action-btn {
-      background-color: var(--accent-color);
+      background: var(--accent-color);
       color: white;
       border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
 
-    /* Accordion / Folders */
+    /* Folders / Accordions */
     .folder-header {
       display: flex;
       justify-content: space-between;
@@ -280,7 +316,7 @@
       flex-direction: column;
       gap: 8px;
       margin-top: 8px;
-      max-height: 200px;
+      max-height: 220px;
       overflow-y: auto;
     }
 
@@ -288,14 +324,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: var(--bg-color);
-      padding: 8px 12px;
-      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 10px 14px;
+      border-radius: 10px;
       font-size: 13px;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--card-border);
     }
 
-    .custom-word-kor, .history-word-kor { font-weight: 600; }
+    .custom-word-kor, .history-word-kor { font-weight: 700; }
     .custom-word-eng, .history-word-eng { color: var(--subtext-color); font-size: 12px; margin-left: 6px; }
 
     .action-btn-group { display: flex; gap: 4px; }
@@ -305,8 +341,9 @@
       color: var(--subtext-color);
       font-size: 11px;
       cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 600;
     }
 
     .edit-btn:hover { color: var(--accent-color); }
@@ -314,17 +351,15 @@
     .restore-btn:hover { color: var(--success-color); }
 
     .copy-btn {
-      background: var(--border-color);
+      background: var(--card-border);
       color: var(--text-color);
-      border-radius: 4px;
-      padding: 4px 8px;
     }
 
     .date-group-card {
       background: var(--card-bg);
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      padding: 14px;
       margin-bottom: 12px;
     }
 
@@ -362,7 +397,7 @@
     <div class="auth-header">
       <div class="auth-info">
         <span class="auth-user" id="authUserInfo">☁️ Guest Mode (Local Only)</span>
-        <span class="sync-status" id="syncStatus">Sign in to sync across iOS & Android</span>
+        <span class="sync-status" id="syncStatus">Sign in to sync across devices</span>
       </div>
       <button class="auth-btn" id="authBtn" onclick="handleAuthAction()">Sign In</button>
     </div>
@@ -379,7 +414,7 @@
       <!-- Card Display -->
       <div class="card-display">
         <div class="card-meta">
-          <span id="cardIndexLabel">Card index: 0 / 0</span>
+          <span id="cardIndexLabel">Card: 0 / 0</span>
           <span id="streakBadge">🔥 0 Days (🛡️ 2/2)</span>
           <span id="flowLabel">0% Done</span>
         </div>
@@ -394,14 +429,14 @@
         <button class="ctrl-btn" id="repeatBtn">🔊 Repeat</button>
         <button class="ctrl-btn" id="nextBtn">Next ▶</button>
         <button class="ctrl-btn primary" id="checkBtn">👁️ Show / Hide Answer</button>
-        <button class="ctrl-btn primary" id="memorizeCurrentBtn" style="background-color: var(--success-color); border-color: var(--success-color);">🧠 Mark Memorized</button>
+        <button class="ctrl-btn success" id="memorizeCurrentBtn">🧠 Mark Memorized</button>
       </div>
 
       <!-- Settings & Mode Selection -->
       <div class="panel-box" style="margin-top: 12px;">
         <div>
-          <span style="font-size: 11px; color: var(--subtext-color); font-weight: 600;">SELECT DECK</span>
-          <div class="segmented-control" id="deckSelector" style="margin-top: 4px;">
+          <span style="font-size: 11px; color: var(--subtext-color); font-weight: 700; letter-spacing: 0.5px;">SELECT DECK</span>
+          <div class="segmented-control" id="deckSelector" style="margin-top: 6px;">
             <button class="segmented-btn active" data-deck="essential">Essential</button>
             <button class="segmented-btn" data-deck="verbs">Verbs</button>
             <button class="segmented-btn" data-deck="travel">Travel</button>
@@ -411,8 +446,8 @@
         </div>
 
         <div>
-          <span style="font-size: 11px; color: var(--subtext-color); font-weight: 600;">ORDER MODE</span>
-          <div class="segmented-control" id="orderSelector" style="margin-top: 4px;">
+          <span style="font-size: 11px; color: var(--subtext-color); font-weight: 700; letter-spacing: 0.5px;">ORDER MODE</span>
+          <div class="segmented-control" id="orderSelector" style="margin-top: 6px;">
             <button class="segmented-btn active" data-order="random">Random Loop</button>
             <button class="segmented-btn" data-order="sequential">Sequential</button>
           </div>
@@ -429,10 +464,10 @@
 
       <!-- Add Custom Word Section -->
       <div class="panel-box" style="margin-top: 12px;">
-        <span style="font-size: 12px; font-weight: 600;">➕ Add Custom Word</span>
+        <span style="font-size: 12px; font-weight: 700;">➕ Add Custom Word</span>
         <div class="input-group">
           <input type="text" id="customKorean" placeholder="Korean (e.g. 사과)" />
-          <button class="action-btn" id="autoTranslateBtn" style="background: var(--border-color);">✨ Auto Translate</button>
+          <button class="action-btn" id="autoTranslateBtn" style="background: var(--card-border);">✨ Auto Translate</button>
         </div>
         <div class="input-group">
           <input type="text" id="customEnglish" placeholder="English (e.g. Apple)" />
@@ -461,7 +496,7 @@
       <!-- Stats Bar -->
       <div class="panel-box" style="margin-top: 12px; flex-direction: row; justify-content: space-between; align-items: center;">
         <span style="font-size: 12px; color: var(--subtext-color);">Daily Goal Progress:</span>
-        <span id="dailyGoalCount" style="font-size: 13px; font-weight: 600;">0 / 10</span>
+        <span id="dailyGoalCount" style="font-size: 13px; font-weight: 700;">0 / 10</span>
         <span id="intervalLabel" style="font-size: 11px; color: var(--subtext-color);">Interval: 5s</span>
       </div>
 
@@ -495,13 +530,11 @@
       auth = firebase.auth();
       db = firebase.firestore();
 
-      // Catch mobile redirect login results on page load
       auth.getRedirectResult().then((result) => {
         if (result && result.user) {
           console.log("Logged in via redirect:", result.user.email);
         }
       }).catch((error) => {
-        console.error("Redirect login error:", error);
         if (error.code && error.code !== 'auth/popup-closed-by-user') {
           alert("Login Redirect Error: " + error.message);
         }
@@ -518,7 +551,7 @@
         } else {
           currentUser = null;
           document.getElementById("authUserInfo").innerText = "☁️ Guest Mode (Local Only)";
-          document.getElementById("syncStatus").innerText = "Sign in to sync across iOS & Android";
+          document.getElementById("syncStatus").innerText = "Sign in to sync across devices";
           document.getElementById("authBtn").innerText = "Sign In";
           document.getElementById("authBtn").classList.remove("logout");
         }
@@ -527,7 +560,6 @@
       console.warn("Firebase initialization error:", e);
     }
 
-    // Step 2 Updated Sign In Function: Try Popup first, fallback to Redirect
     function handleAuthAction() {
       if (!auth) {
         alert("Firebase Auth is not properly initialized.");
@@ -542,7 +574,6 @@
         provider.setCustomParameters({ prompt: 'select_account' });
 
         auth.signInWithPopup(provider).catch((error) => {
-          console.warn("Popup sign-in failed/blocked, switching to redirect:", error);
           if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
             auth.signInWithRedirect(provider);
           } else {
@@ -550,6 +581,44 @@
           }
         });
       }
+    }
+
+    // --- ENHANCED & STABLE SPEECH ENGINE ---
+    let selectedKoreanVoice = null;
+
+    function initVoices() {
+      if ('speechSynthesis' in window) {
+        const voices = window.speechSynthesis.getVoices();
+        // Priority to clear, natural/neural Google or Apple Korean voices
+        selectedKoreanVoice = voices.find(v => (v.lang === 'ko-KR' || v.lang === 'ko_KR') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Yuna') || v.name.includes('Seoyeon'))) ||
+                              voices.find(v => v.lang === 'ko-KR' || v.lang === 'ko_KR') || null;
+      }
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = initVoices;
+      initVoices();
+    }
+
+    function speakKorean(text) {
+      if (!('speechSynthesis' in window)) return;
+
+      // Reset speech engine state to clear stalls/hanging
+      window.speechSynthesis.cancel();
+
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 0.85; // Slightly slower for accurate dictation
+        utterance.pitch = 1.0;
+
+        if (selectedKoreanVoice) {
+          utterance.voice = selectedKoreanVoice;
+        }
+
+        window.speechSynthesis.speak(utterance);
+        recordWordSpoken();
+      }, 50);
     }
 
     // --- APP CORE DATA & LOGIC ---
@@ -602,7 +671,6 @@
     const intervalLabel = document.getElementById("intervalLabel");
     const dailyGoalCountEl = document.getElementById("dailyGoalCount");
     const streakBadge = document.getElementById("streakBadge");
-    const deckLabel = document.getElementById("deckLabel");
     const flowLabel = document.getElementById("flowLabel");
     const delaySlider = document.getElementById("delaySlider");
     const delayValText = document.getElementById("delayValText");
@@ -667,7 +735,6 @@
         }, { merge: true }).then(() => {
           document.getElementById("syncStatus").innerText = "⚡ Connected & Cloud Synced";
         }).catch(err => {
-          console.error("Cloud save failed:", err);
           document.getElementById("syncStatus").innerText = "⚠️ Sync Error";
         });
       }
@@ -814,31 +881,20 @@
       updateStreakUI();
     }
 
-    function speakKorean(text) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ko-KR';
-        utterance.rate = 0.8;
-        window.speechSynthesis.speak(utterance);
-        recordWordSpoken();
-      }
-    }
-
     function updateCardDisplay() {
       answerRevealed = false;
       displayWord.innerText = "????";
       displayHint.innerText = "[ Listen to audio ]";
 
       if (activeList.length === 0) {
-        cardIndexLabel.innerText = "Card index: 0 / 0";
+        cardIndexLabel.innerText = "Card: 0 / 0";
         flowLabel.innerText = "100% Done";
         displayWord.innerText = "Empty";
         displayHint.innerText = "[ No words in this deck ]";
         return;
       }
 
-      cardIndexLabel.innerText = `Card index: ${currentIndex + 1} / ${activeList.length}`;
+      cardIndexLabel.innerText = `Card: ${currentIndex + 1} / ${activeList.length}`;
       const pct = Math.round(((currentIndex + 1) / activeList.length) * 100);
       flowLabel.innerText = `${pct}% Done`;
 
